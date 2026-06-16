@@ -1,9 +1,7 @@
 # رابط تحميل التطبيق
 
-بعد نجاح البناء، حمل ملف APK مباشرة من هذا الرابط:
+بعد نجاح البناء على GitHub سيظهر ملف APK هنا:
 
-https://github.com/aljwaal1/KIDSGAME/raw/main/apk/kids-games-arena.apk
+`apk/kids-games-arena.apk`
 
-اسم الملف:
-
-apk/kids-games-arena.apk
+وسيتم تحديث هذا الملف تلقائيًا برابط التحميل المباشر.

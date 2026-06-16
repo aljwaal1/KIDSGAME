@@ -268,18 +268,24 @@ class _TicTacToePageState extends State<TicTacToePage> {
   String player = 'X';
   String message = 'دور اللاعب X';
   bool finished = false;
+  List<int> winLine = const [];
 
   void play(int index) {
     if (board[index].isNotEmpty || finished) return;
+    SystemSound.play(SystemSoundType.click);
     setState(() {
       board[index] = player;
-      final winner = getWinner();
+      final winner = getWinnerLine();
       if (winner != null) {
-        message = 'فاز اللاعب $winner';
+        winLine = winner;
+        message = 'فاز اللاعب ${board[winner.first]}';
         finished = true;
+        HapticFeedback.heavyImpact();
+        SystemSound.play(SystemSoundType.alert);
       } else if (!board.contains('')) {
         message = 'تعادل';
         finished = true;
+        HapticFeedback.mediumImpact();
       } else {
         player = player == 'X' ? 'O' : 'X';
         message = 'دور اللاعب $player';
@@ -287,7 +293,7 @@ class _TicTacToePageState extends State<TicTacToePage> {
     });
   }
 
-  String? getWinner() {
+  List<int>? getWinnerLine() {
     const lines = [
       [0, 1, 2],
       [3, 4, 5],
@@ -303,7 +309,7 @@ class _TicTacToePageState extends State<TicTacToePage> {
       final b = line[1];
       final c = line[2];
       if (board[a].isNotEmpty && board[a] == board[b] && board[b] == board[c]) {
-        return board[a];
+        return line;
       }
     }
     return null;
@@ -315,6 +321,7 @@ class _TicTacToePageState extends State<TicTacToePage> {
       player = 'X';
       message = 'دور اللاعب X';
       finished = false;
+      winLine = const [];
     });
   }
 
@@ -332,43 +339,64 @@ class _TicTacToePageState extends State<TicTacToePage> {
         const SizedBox(height: 16),
         AspectRatio(
           aspectRatio: 1,
-          child: GridView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 9,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-            ),
-            itemBuilder: (context, index) {
-              final value = board[index];
-              return InkWell(
-                borderRadius: BorderRadius.circular(24),
-                onTap: () => play(index),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  decoration: BoxDecoration(
-                    color: value == 'X'
-                        ? const Color(0xFFEDE9FE)
-                        : value == 'O'
-                            ? const Color(0xFFFFEDD5)
-                            : Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFE9D5FF), width: 2),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final size = constraints.maxWidth;
+              return Stack(
+                children: [
+                  GridView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: 9,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                    ),
+                    itemBuilder: (context, index) {
+                      final value = board[index];
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(24),
+                        onTap: () => play(index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          decoration: BoxDecoration(
+                            color: value == 'X'
+                                ? const Color(0xFFEDE9FE)
+                                : value == 'O'
+                                    ? const Color(0xFFFFEDD5)
+                                    : Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: winLine.contains(index)
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFE9D5FF),
+                              width: winLine.contains(index) ? 4 : 2,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              value,
+                              style: TextStyle(
+                                fontSize: 54,
+                                fontWeight: FontWeight.w900,
+                                color: value == 'X'
+                                    ? const Color(0xFF6D28D9)
+                                    : const Color(0xFFF97316),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                  child: Center(
-                    child: Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 54,
-                        fontWeight: FontWeight.w900,
-                        color: value == 'X'
-                            ? const Color(0xFF6D28D9)
-                            : const Color(0xFFF97316),
+                  if (winLine.isNotEmpty)
+                    IgnorePointer(
+                      child: CustomPaint(
+                        size: Size.square(size),
+                        painter: WinLinePainter(winLine),
                       ),
                     ),
-                  ),
-                ),
+                ],
               );
             },
           ),
@@ -423,11 +451,16 @@ class _SlidingPuzzlePageState extends State<SlidingPuzzlePage> {
   void move(int index) {
     final empty = tiles.indexOf(0);
     if (!movableNeighbors(empty).contains(index)) return;
+    SystemSound.play(SystemSoundType.click);
     setState(() {
       tiles[empty] = tiles[index];
       tiles[index] = 0;
       moves++;
     });
+    if (solved) {
+      HapticFeedback.heavyImpact();
+      SystemSound.play(SystemSoundType.alert);
+    }
   }
 
   bool get solved {
@@ -507,28 +540,45 @@ class BubbleLettersPage extends StatefulWidget {
   State<BubbleLettersPage> createState() => _BubbleLettersPageState();
 }
 
-class _BubbleLettersPageState extends State<BubbleLettersPage> {
+class _BubbleLettersPageState extends State<BubbleLettersPage>
+    with SingleTickerProviderStateMixin {
   final Random random = Random();
   final List<String> letters = ['أ', 'ب', 'ت', 'ج', 'ح', 'د', 'ر', 'س', 'ص'];
   late String target;
   late List<String> bubbles;
+  late AnimationController driftController;
   int score = 0;
   int mistakes = 0;
 
   @override
   void initState() {
     super.initState();
-    newRound(resetScore: true);
+    driftController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3200),
+    )..repeat(reverse: true);
+    createRound(resetScore: true);
   }
 
-  void newRound({bool resetScore = false}) {
+  @override
+  void dispose() {
+    driftController.dispose();
+    super.dispose();
+  }
+
+  void createRound({bool resetScore = false}) {
     target = letters[random.nextInt(letters.length)];
-    bubbles = List.generate(12, (_) => letters[random.nextInt(letters.length)]);
-    bubbles[random.nextInt(bubbles.length)] = target;
+    final count = 3 + random.nextInt(2);
+    bubbles = List.generate(count, (_) => letters[random.nextInt(letters.length)]);
+    bubbles[random.nextInt(count)] = target;
     if (resetScore) {
       score = 0;
       mistakes = 0;
     }
+  }
+
+  void newRound({bool resetScore = false}) {
+    createRound(resetScore: resetScore);
     setState(() {});
   }
 
@@ -536,12 +586,15 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> {
     var shouldStartNewRound = false;
     setState(() {
       if (bubbles[index] == target) {
+        SystemSound.play(SystemSoundType.click);
+        HapticFeedback.lightImpact();
         score++;
         bubbles[index] = '';
         if (!bubbles.contains(target)) {
           shouldStartNewRound = true;
         }
       } else {
+        SystemSound.play(SystemSoundType.alert);
         mistakes++;
       }
     });
@@ -559,9 +612,39 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> {
       children: [
         GameHeader(
           title: 'فقاعات الحروف',
-          subtitle: 'اضغط حرف: $target    النقاط: $score',
+          subtitle: 'النقاط: $score',
           color: const Color(0xFF06B6D4),
           onReset: () => newRound(resetScore: true),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0F7FA),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: const Color(0xFF67E8F9), width: 2),
+          ),
+          child: Column(
+            children: [
+              const Text(
+                'اضغط نفس الحرف',
+                style: TextStyle(
+                  color: Color(0xFF0E7490),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                target,
+                style: const TextStyle(
+                  color: Color(0xFF155E75),
+                  fontSize: 88,
+                  fontWeight: FontWeight.w900,
+                  height: 1,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 10),
         Text(
@@ -569,53 +652,100 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> {
           style: const TextStyle(color: Color(0xFF64748B)),
         ),
         const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: bubbles.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemBuilder: (context, index) {
-            final letter = bubbles[index];
-            final hidden = letter.isEmpty;
-            return AnimatedOpacity(
-              duration: const Duration(milliseconds: 180),
-              opacity: hidden ? 0.15 : 1,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(999),
-                onTap: hidden ? null : () => pop(index),
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: hidden
-                          ? [const Color(0xFFE2E8F0), const Color(0xFFCBD5E1)]
-                          : [const Color(0xFFA5F3FC), const Color(0xFF22D3EE)],
-                      begin: Alignment.topRight,
-                      end: Alignment.bottomLeft,
-                    ),
-                    border: Border.all(color: Colors.white, width: 4),
-                  ),
-                  child: Center(
-                    child: Text(
-                      letter,
-                      style: const TextStyle(
-                        color: Color(0xFF164E63),
-                        fontSize: 42,
-                        fontWeight: FontWeight.w900,
+        AnimatedBuilder(
+          animation: driftController,
+          builder: (context, _) {
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: bubbles.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 18,
+                mainAxisSpacing: 18,
+              ),
+              itemBuilder: (context, index) {
+                final letter = bubbles[index];
+                final hidden = letter.isEmpty;
+                final direction = index.isEven ? 1.0 : -1.0;
+                final offset = sin(driftController.value * pi * 2 + index) * 18 * direction;
+                return Transform.translate(
+                  offset: Offset(offset, 0),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 180),
+                    opacity: hidden ? 0.12 : 1,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(999),
+                      onTap: hidden ? null : () => pop(index),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: hidden
+                                ? [const Color(0xFFE2E8F0), const Color(0xFFCBD5E1)]
+                                : [const Color(0xFFA5F3FC), const Color(0xFF22D3EE)],
+                            begin: Alignment.topRight,
+                            end: Alignment.bottomLeft,
+                          ),
+                          border: Border.all(color: Colors.white, width: 4),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x3306B6D4),
+                              blurRadius: 18,
+                              offset: Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            letter,
+                            style: const TextStyle(
+                              color: Color(0xFF164E63),
+                              fontSize: 50,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             );
           },
         ),
       ],
     );
+  }
+}
+
+class WinLinePainter extends CustomPainter {
+  const WinLinePainter(this.line);
+
+  final List<int> line;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (line.length != 3) return;
+    final cell = size.width / 3;
+    Offset centerOf(int index) {
+      final row = index ~/ 3;
+      final col = index % 3;
+      return Offset(col * cell + cell / 2, row * cell + cell / 2);
+    }
+
+    final start = centerOf(line.first);
+    final end = centerOf(line.last);
+    final paint = Paint()
+      ..color = const Color(0xFF10B981)
+      ..strokeWidth = 10
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(start, end, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant WinLinePainter oldDelegate) {
+    return oldDelegate.line.join(',') != line.join(',');
   }
 }
 
