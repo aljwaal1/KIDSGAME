@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -269,10 +270,16 @@ class _TicTacToePageState extends State<TicTacToePage> {
   String message = 'دور اللاعب X';
   bool finished = false;
   List<int> winLine = const [];
+  final AudioPlayer audio = AudioPlayer();
+
+  void playSound(String fileName) {
+    audio.stop();
+    audio.play(AssetSource('sounds/$fileName'));
+  }
 
   void play(int index) {
     if (board[index].isNotEmpty || finished) return;
-    SystemSound.play(SystemSoundType.click);
+    playSound('tap.wav');
     setState(() {
       board[index] = player;
       final winner = getWinnerLine();
@@ -281,7 +288,7 @@ class _TicTacToePageState extends State<TicTacToePage> {
         message = 'فاز اللاعب ${board[winner.first]}';
         finished = true;
         HapticFeedback.heavyImpact();
-        SystemSound.play(SystemSoundType.alert);
+        playSound('win.wav');
       } else if (!board.contains('')) {
         message = 'تعادل';
         finished = true;
@@ -323,6 +330,12 @@ class _TicTacToePageState extends State<TicTacToePage> {
       finished = false;
       winLine = const [];
     });
+  }
+
+  @override
+  void dispose() {
+    audio.dispose();
+    super.dispose();
   }
 
   @override
@@ -417,6 +430,12 @@ class _SlidingPuzzlePageState extends State<SlidingPuzzlePage> {
   List<int> tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
   int moves = 0;
   final Random random = Random();
+  final AudioPlayer audio = AudioPlayer();
+
+  void playSound(String fileName) {
+    audio.stop();
+    audio.play(AssetSource('sounds/$fileName'));
+  }
 
   @override
   void initState() {
@@ -451,7 +470,7 @@ class _SlidingPuzzlePageState extends State<SlidingPuzzlePage> {
   void move(int index) {
     final empty = tiles.indexOf(0);
     if (!movableNeighbors(empty).contains(index)) return;
-    SystemSound.play(SystemSoundType.click);
+    playSound('move.wav');
     setState(() {
       tiles[empty] = tiles[index];
       tiles[index] = 0;
@@ -459,7 +478,7 @@ class _SlidingPuzzlePageState extends State<SlidingPuzzlePage> {
     });
     if (solved) {
       HapticFeedback.heavyImpact();
-      SystemSound.play(SystemSoundType.alert);
+      playSound('win.wav');
     }
   }
 
@@ -468,6 +487,12 @@ class _SlidingPuzzlePageState extends State<SlidingPuzzlePage> {
       if (tiles[i] != i + 1) return false;
     }
     return tiles[8] == 0;
+  }
+
+  @override
+  void dispose() {
+    audio.dispose();
+    super.dispose();
   }
 
   @override
@@ -549,6 +574,12 @@ class _BubbleLettersPageState extends State<BubbleLettersPage>
   late AnimationController driftController;
   int score = 0;
   int mistakes = 0;
+  final AudioPlayer audio = AudioPlayer();
+
+  void playSound(String fileName) {
+    audio.stop();
+    audio.play(AssetSource('sounds/$fileName'));
+  }
 
   @override
   void initState() {
@@ -563,6 +594,7 @@ class _BubbleLettersPageState extends State<BubbleLettersPage>
   @override
   void dispose() {
     driftController.dispose();
+    audio.dispose();
     super.dispose();
   }
 
@@ -586,7 +618,7 @@ class _BubbleLettersPageState extends State<BubbleLettersPage>
     var shouldStartNewRound = false;
     setState(() {
       if (bubbles[index] == target) {
-        SystemSound.play(SystemSoundType.click);
+        playSound('pop.wav');
         HapticFeedback.lightImpact();
         score++;
         bubbles[index] = '';
@@ -594,7 +626,7 @@ class _BubbleLettersPageState extends State<BubbleLettersPage>
           shouldStartNewRound = true;
         }
       } else {
-        SystemSound.play(SystemSoundType.alert);
+        playSound('wrong.wav');
         mistakes++;
       }
     });
