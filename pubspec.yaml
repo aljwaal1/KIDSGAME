@@ -2,7 +2,7 @@ name: kids_games_arena
 description: Arabic kids games app with tic tac toe, sliding puzzle, and letter bubbles.
 publish_to: "none"
 
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -13,13 +13,39 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   audioplayers: ^6.1.0
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.1
 
 flutter:
   uses-material-design: true
   assets:
     - assets/sounds/
+  fonts:
+    - family: Changa
+      fonts:
+        - asset: assets/fonts/Changa-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Changa-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Changa-ExtraBold.ttf
+          weight: 800
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Cairo-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Cairo-Bold.ttf
+          weight: 700
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  image_path: "assets/icon/icon_legacy.png"
+  adaptive_icon_background: "assets/icon/icon_background.png"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+  min_sdk_android: 21
