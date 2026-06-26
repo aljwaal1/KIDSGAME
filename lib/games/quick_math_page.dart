@@ -2,8 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import '../services/score_service.dart';
-import '../services/sound_service.dart';
+import 'package:kids_games_arena/services/score_service.dart';
+import 'package:kids_games_arena/services/sound_service.dart';
 
 class QuickMathPage extends StatefulWidget {
   const QuickMathPage({super.key});
