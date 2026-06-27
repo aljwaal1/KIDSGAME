@@ -1,43 +1,62 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 class ScoreService {
   ScoreService._();
   static final ScoreService instance = ScoreService._();
 
-  int _stars = 0;
-  final Map<String, int> _bestMoves = <String, int>{};
-  final Map<String, int> _bestStreaks = <String, int>{};
+  static const String _starsKey = 'total_stars';
 
-  Future<int> get totalStars async => _stars;
+  Future<int> get totalStars async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_starsKey) ?? 0;
+  }
 
   Future<void> addStars(int count) async {
     if (count <= 0) return;
-    _stars += count;
+    final prefs = await SharedPreferences.getInstance();
+    final current = prefs.getInt(_starsKey) ?? 0;
+    await prefs.setInt(_starsKey, current + count);
   }
 
-  Future<int?> getBestMoves(String key) async => _bestMoves[key];
+  Future<int?> getBestMoves(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('best_moves_$key');
+  }
 
   Future<bool> reportMoves(String key, int moves) async {
-    final old = _bestMoves[key];
+    final prefs = await SharedPreferences.getInstance();
+    final prefKey = 'best_moves_$key';
+    final old = prefs.getInt(prefKey);
     if (old == null || moves < old) {
-      _bestMoves[key] = moves;
+      await prefs.setInt(prefKey, moves);
       return true;
     }
     return false;
   }
 
-  Future<int?> getBestStreak(String key) async => _bestStreaks[key];
+  Future<int?> getBestStreak(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('best_streak_$key');
+  }
 
   Future<bool> reportStreak(String key, int streak) async {
-    final old = _bestStreaks[key];
+    final prefs = await SharedPreferences.getInstance();
+    final prefKey = 'best_streak_$key';
+    final old = prefs.getInt(prefKey);
     if (old == null || streak > old) {
-      _bestStreaks[key] = streak;
+      await prefs.setInt(prefKey, streak);
       return true;
     }
     return false;
   }
 
   Future<void> resetProgress() async {
-    _stars = 0;
-    _bestMoves.clear();
-    _bestStreaks.clear();
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys().where((String key) {
+      return key == _starsKey || key.startsWith('best_moves_') || key.startsWith('best_streak_');
+    }).toList();
+    for (final key in keys) {
+      await prefs.remove(key);
+    }
   }
 }
