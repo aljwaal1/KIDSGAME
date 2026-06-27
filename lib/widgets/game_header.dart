@@ -35,10 +35,7 @@ class GameHeader extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(color: Color(0xFF64748B)),
-                  ),
+                  Text(subtitle, style: const TextStyle(color: Color(0xFF64748B))),
                 ],
               ),
             ),
