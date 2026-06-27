@@ -63,14 +63,13 @@ class _GamesHomeState extends State<GamesHome> {
       const BubbleLettersPage(),
       const DeveloperPage(),
     ];
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('ملعب الأطفال'),
         actions: <Widget>[
           ValueListenableBuilder<bool>(
             valueListenable: SoundService.instance.mutedNotifier,
-            builder: (BuildContext context, bool muted, Widget? child) {
+            builder: (context, muted, _) {
               return IconButton(
                 tooltip: muted ? 'تشغيل الصوت' : 'كتم الصوت',
                 icon: Icon(muted ? Icons.volume_off_rounded : Icons.volume_up_rounded),
@@ -85,31 +84,11 @@ class _GamesHomeState extends State<GamesHome> {
         selectedIndex: tab,
         onDestinationSelected: _selectTab,
         destinations: const <NavigationDestination>[
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'الرئيسية',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.grid_3x3_outlined),
-            selectedIcon: Icon(Icons.grid_3x3_rounded),
-            label: 'إكس أو',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.extension_outlined),
-            selectedIcon: Icon(Icons.extension_rounded),
-            label: 'البزل',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.bubble_chart_outlined),
-            selectedIcon: Icon(Icons.bubble_chart_rounded),
-            label: 'الحروف',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.mail_outline_rounded),
-            selectedIcon: Icon(Icons.mail_rounded),
-            label: 'المطور',
-          ),
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'الرئيسية'),
+          NavigationDestination(icon: Icon(Icons.grid_3x3_outlined), selectedIcon: Icon(Icons.grid_3x3_rounded), label: 'إكس أو'),
+          NavigationDestination(icon: Icon(Icons.extension_outlined), selectedIcon: Icon(Icons.extension_rounded), label: 'البزل'),
+          NavigationDestination(icon: Icon(Icons.bubble_chart_outlined), selectedIcon: Icon(Icons.bubble_chart_rounded), label: 'الحروف'),
+          NavigationDestination(icon: Icon(Icons.mail_outline_rounded), selectedIcon: Icon(Icons.mail_rounded), label: 'المطور'),
         ],
       ),
     );
