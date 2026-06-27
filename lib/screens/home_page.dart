@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../games/memory_pairs_page.dart';
 import '../games/mini_sudoku_page.dart';
+import '../games/odd_one_out_page.dart';
 import '../games/pattern_challenge_page.dart';
 import '../games/quick_math_page.dart';
+import '../games/sequence_order_page.dart';
+import '../games/shape_shadow_page.dart';
 import '../games/smart_maze_page.dart';
 import '../services/score_service.dart';
-import '../widgets/mascot_painter.dart';
 
 class HomeGamesPage extends StatelessWidget {
   const HomeGamesPage({super.key, required this.onSelectGame});
 
-  /// Called with the bottom-navigation tab index of the chosen game.
   final ValueChanged<int> onSelectGame;
 
   @override
@@ -24,7 +25,7 @@ class HomeGamesPage extends StatelessWidget {
         GameInfoCard(
           icon: Icons.grid_3x3_rounded,
           title: 'إكس أو',
-          text: 'لعب سريع بين لاعبين، أو تحدَّ الكمبيوتر.',
+          text: 'النسخة الأصلية: ضد صديق أو ضد الكمبيوتر.',
           color: const Color(0xFF6D28D9),
           onTap: () => onSelectGame(1),
         ),
@@ -32,7 +33,7 @@ class HomeGamesPage extends StatelessWidget {
         GameInfoCard(
           icon: Icons.extension_rounded,
           title: 'بزل الأرقام',
-          text: 'حرّك الأرقام حول المربع الفارغ حتى ترتبها.',
+          text: 'النسخة الأصلية: سهل 3×3 وصعب 4×4.',
           color: const Color(0xFFF97316),
           onTap: () => onSelectGame(2),
         ),
@@ -40,7 +41,7 @@ class HomeGamesPage extends StatelessWidget {
         GameInfoCard(
           icon: Icons.bubble_chart_rounded,
           title: 'فقاعات الحروف',
-          text: 'اضغط الفقاعات التي تحمل نفس الحرف المطلوب.',
+          text: 'فقاعات متحركة مع نقاط وأفضل متتالية.',
           color: const Color(0xFF06B6D4),
           onTap: () => onSelectGame(3),
         ),
@@ -89,6 +90,35 @@ class HomeGamesPage extends StatelessWidget {
           color: const Color(0xFF7C3AED),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuickMathPage())),
         ),
+        const SizedBox(height: 18),
+        const Text(
+          'إضافات جديدة',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, fontFamily: 'Changa'),
+        ),
+        const SizedBox(height: 12),
+        GameInfoCard(
+          icon: Icons.search_rounded,
+          title: 'ابحث عن المختلف',
+          text: 'لاحظ الأشكال واختر الشكل المختلف بينها.',
+          color: const Color(0xFF4F46E5),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OddOneOutPage())),
+        ),
+        const SizedBox(height: 12),
+        GameInfoCard(
+          icon: Icons.filter_vintage_rounded,
+          title: 'ظل الشكل',
+          text: 'طابق الشكل مع الظل الصحيح.',
+          color: const Color(0xFFEA580C),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShapeShadowPage())),
+        ),
+        const SizedBox(height: 12),
+        GameInfoCard(
+          icon: Icons.sort_rounded,
+          title: 'رتّب التسلسل',
+          text: 'رتّب الأرقام بالمنطق من الأصغر إلى الأكبر.',
+          color: const Color(0xFF16A34A),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SequenceOrderPage())),
+        ),
         const SizedBox(height: 20),
         const _TipsCard(),
       ],
@@ -118,34 +148,25 @@ class _HeroPanel extends StatelessWidget {
           ),
         ],
       ),
-      child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ألعب، فكّر، وتعلّم',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    fontFamily: 'Changa',
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'ألعاب ممتعة للأطفال، بدون إنترنت.',
-                  style: TextStyle(color: Color(0xFFFFF7D6), fontSize: 15),
-                ),
-                SizedBox(height: 16),
-                _StarsBadge(),
-              ],
+          Text(
+            'ألعب، فكّر، وتعلّم',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'Changa',
             ),
           ),
-          SizedBox(width: 10),
-          StarMascot(size: 92, mood: MascotMood.happy),
+          SizedBox(height: 8),
+          Text(
+            'الألعاب الأصلية رجعت كما كانت، ومعها ألعاب ذكاء جديدة.',
+            style: TextStyle(color: Color(0xFFFFF7D6), fontSize: 15),
+          ),
+          SizedBox(height: 16),
+          _StarsBadge(),
         ],
       ),
     );
@@ -266,18 +287,18 @@ class _TipsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFDE68A)),
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: const Row(
         children: [
-          Icon(Icons.lightbulb_rounded, color: Color(0xFFD97706)),
+          Icon(Icons.lightbulb_rounded, color: Color(0xFFF59E0B)),
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'العب مع طفلك لتشجيعه، واجمعوا النجوم معًا!',
-              style: TextStyle(color: Color(0xFF92400E), fontWeight: FontWeight.w600),
+              'نصيحة: خلي الطفل يجرب أكثر من لعبة قصيرة بدل جلسة طويلة.',
+              style: TextStyle(color: Color(0xFF64748B)),
             ),
           ),
         ],
