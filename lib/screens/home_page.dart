@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../games/capital_letter_coloring_page.dart';
 import '../games/memory_pairs_page.dart';
 import '../games/mini_sudoku_page.dart';
 import '../games/odd_one_out_page.dart';
@@ -47,6 +48,10 @@ class HomeGamesPage extends StatelessWidget {
         GameInfoCard(icon: Icons.filter_vintage_rounded, title: 'ظل الشكل', text: 'طابق الشكل مع ظله الصحيح.', color: const Color(0xFF8B5CF6), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const ShapeShadowPage()))),
         const SizedBox(height: 12),
         GameInfoCard(icon: Icons.sort_rounded, title: 'رتّب التسلسل', text: 'رتب العناصر حسب المنطق الصحيح.', color: const Color(0xFFEF4444), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SequenceOrderPage()))),
+        const SizedBox(height: 18),
+        const Text('ألعاب تعليمية للرسم والكتابة', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, fontFamily: 'Changa')),
+        const SizedBox(height: 12),
+        GameInfoCard(icon: Icons.draw_rounded, title: 'تلوين الحروف الكبيرة', text: 'لوّن الحرف الإنجليزي الكبير بإصبعك كأنك تكتبه.', color: const Color(0xFF4F46E5), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const CapitalLetterColoringPage()))),
         const SizedBox(height: 20),
         const _TipsCard(),
       ],
