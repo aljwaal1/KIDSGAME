@@ -5,6 +5,7 @@ import '../games/memory_pairs_page.dart';
 import '../games/mini_sudoku_page.dart';
 import '../games/odd_one_out_page.dart';
 import '../games/pattern_challenge_page.dart';
+import '../games/pebble_harra_page.dart';
 import '../games/quick_math_page.dart';
 import '../games/sequence_order_page.dart';
 import '../games/shape_shadow_page.dart';
@@ -45,6 +46,9 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
       ]),
       _GameSection('التعليم', const Color(0xFF4F46E5), <_GameItem>[
         _GameItem(Icons.draw_rounded, 'تلوين الحروف الكبيرة', 'اتبع السهم', const Color(0xFF4F46E5), () => _open(const CapitalLetterColoringPage())),
+      ]),
+      _GameSection('تراث', const Color(0xFFB45309), <_GameItem>[
+        _GameItem(Icons.scatter_plot_rounded, 'الحَرّة بالحصى', 'لعبة زمان بالحصى', const Color(0xFFB45309), () => _open(const PebbleHarraPage())),
       ]),
     ];
 
@@ -111,17 +115,17 @@ class _SectionTabs extends StatelessWidget {
         for (var i = 0; i < sections.length; i++)
           Expanded(
             child: Padding(
-              padding: EdgeInsetsDirectional.only(start: i == 0 ? 0 : 6),
+              padding: EdgeInsetsDirectional.only(start: i == 0 ? 0 : 5),
               child: InkWell(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(16),
                 onTap: () => onSelect(i),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  height: 46,
+                  height: 44,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: selected == i ? sections[i].color : Colors.white,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: selected == i ? sections[i].color : const Color(0xFFE2E8F0)),
                     boxShadow: selected == i ? <BoxShadow>[BoxShadow(color: sections[i].color.withAlpha(50), blurRadius: 10, offset: const Offset(0, 4))] : null,
                   ),
@@ -132,7 +136,7 @@ class _SectionTabs extends StatelessWidget {
                     style: TextStyle(
                       color: selected == i ? Colors.white : const Color(0xFF475569),
                       fontWeight: FontWeight.w900,
-                      fontSize: 13,
+                      fontSize: 12,
                     ),
                   ),
                 ),
