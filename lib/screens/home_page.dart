@@ -12,49 +12,204 @@ import '../games/smart_maze_page.dart';
 import '../services/score_service.dart';
 import '../widgets/mascot_painter.dart';
 
-class HomeGamesPage extends StatelessWidget {
+class HomeGamesPage extends StatefulWidget {
   const HomeGamesPage({super.key, required this.onSelectGame});
   final ValueChanged<int> onSelectGame;
 
   @override
+  State<HomeGamesPage> createState() => _HomeGamesPageState();
+}
+
+class _HomeGamesPageState extends State<HomeGamesPage> {
+  int section = 0;
+
+  @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+    final sections = <_GameSection>[
+      _GameSection('الأساسية', const Color(0xFF6D28D9), <_GameItem>[
+        _GameItem(Icons.grid_3x3_rounded, 'إكس أو', 'صديق أو كمبيوتر', const Color(0xFF6D28D9), () => widget.onSelectGame(1)),
+        _GameItem(Icons.extension_rounded, 'بزل الأرقام', '3×3 و 4×4', const Color(0xFFF97316), () => widget.onSelectGame(2)),
+        _GameItem(Icons.bubble_chart_rounded, 'فقاعات الحروف', 'التقط الحرف', const Color(0xFF06B6D4), () => widget.onSelectGame(3)),
+      ]),
+      _GameSection('الذكاء', const Color(0xFF0EA5E9), <_GameItem>[
+        _GameItem(Icons.psychology_rounded, 'ذاكرة الصور', 'تذكر البطاقات', const Color(0xFFEC4899), () => _open(const MemoryPairsPage())),
+        _GameItem(Icons.auto_awesome_rounded, 'تحدي الأنماط', 'الشكل الناقص', const Color(0xFF0EA5E9), () => _open(const PatternChallengePage())),
+        _GameItem(Icons.grid_view_rounded, 'سودوكو الأطفال', 'منطق 4×4', const Color(0xFFF97316), () => _open(const MiniSudokuPage())),
+        _GameItem(Icons.route_rounded, 'المتاهة الذكية', 'وصل للنجمة', const Color(0xFF22C55E), () => _open(const SmartMazePage())),
+        _GameItem(Icons.calculate_rounded, 'الحساب السريع', 'جمع وطرح', const Color(0xFF7C3AED), () => _open(const QuickMathPage())),
+      ]),
+      _GameSection('الملاحظة', const Color(0xFF14B8A6), <_GameItem>[
+        _GameItem(Icons.visibility_rounded, 'ابحث عن المختلف', 'اختر المختلف', const Color(0xFF14B8A6), () => _open(const OddOneOutPage())),
+        _GameItem(Icons.filter_vintage_rounded, 'ظل الشكل', 'طابق الظل', const Color(0xFF8B5CF6), () => _open(const ShapeShadowPage())),
+        _GameItem(Icons.sort_rounded, 'رتّب التسلسل', 'رتب العناصر', const Color(0xFFEF4444), () => _open(const SequenceOrderPage())),
+      ]),
+      _GameSection('التعليم', const Color(0xFF4F46E5), <_GameItem>[
+        _GameItem(Icons.draw_rounded, 'تلوين الحروف الكبيرة', 'اتبع السهم', const Color(0xFF4F46E5), () => _open(const CapitalLetterColoringPage())),
+      ]),
+    ];
+
+    final current = sections[section];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+      child: Column(
+        children: <Widget>[
+          const _HeroPanel(),
+          const SizedBox(height: 10),
+          _SectionTabs(
+            sections: sections,
+            selected: section,
+            onSelect: (index) => setState(() => section = index),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: <Widget>[
+              Icon(Icons.apps_rounded, color: current.color),
+              const SizedBox(width: 8),
+              Text(current.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, fontFamily: 'Changa')),
+              const Spacer(),
+              Text('${current.items.length} ألعاب', style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(child: _GamesGrid(items: current.items)),
+        ],
+      ),
+    );
+  }
+
+  void _open(Widget page) {
+    Navigator.push(context, MaterialPageRoute<void>(builder: (_) => page));
+  }
+}
+
+class _GameSection {
+  const _GameSection(this.title, this.color, this.items);
+  final String title;
+  final Color color;
+  final List<_GameItem> items;
+}
+
+class _GameItem {
+  const _GameItem(this.icon, this.title, this.text, this.color, this.onTap);
+  final IconData icon;
+  final String title;
+  final String text;
+  final Color color;
+  final VoidCallback onTap;
+}
+
+class _SectionTabs extends StatelessWidget {
+  const _SectionTabs({required this.sections, required this.selected, required this.onSelect});
+  final List<_GameSection> sections;
+  final int selected;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
       children: <Widget>[
-        const _HeroPanel(),
-        const SizedBox(height: 16),
-        GameInfoCard(icon: Icons.grid_3x3_rounded, title: 'إكس أو', text: 'ضد صديق أو ضد الكمبيوتر.', color: const Color(0xFF6D28D9), onTap: () => onSelectGame(1)),
-        const SizedBox(height: 12),
-        GameInfoCard(icon: Icons.extension_rounded, title: 'بزل الأرقام', text: 'سهل 3×3 أو صعب 4×4.', color: const Color(0xFFF97316), onTap: () => onSelectGame(2)),
-        const SizedBox(height: 12),
-        GameInfoCard(icon: Icons.bubble_chart_rounded, title: 'فقاعات الحروف', text: 'اضغط الفقاعات التي تحمل نفس الحرف المطلوب.', color: const Color(0xFF06B6D4), onTap: () => onSelectGame(3)),
-        const SizedBox(height: 18),
-        const Text('ألعاب ذكاء وتفكير', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, fontFamily: 'Changa')),
-        const SizedBox(height: 12),
-        GameInfoCard(icon: Icons.psychology_rounded, title: 'ذاكرة الصور', text: 'افتح البطاقات وتذكر أماكن الصور المتشابهة.', color: const Color(0xFFEC4899), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const MemoryPairsPage()))),
-        const SizedBox(height: 12),
-        GameInfoCard(icon: Icons.auto_awesome_rounded, title: 'تحدي الأنماط', text: 'اكتشف الشكل الناقص في السلسلة.', color: const Color(0xFF0EA5E9), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const PatternChallengePage()))),
-        const SizedBox(height: 12),
-        GameInfoCard(icon: Icons.grid_view_rounded, title: 'سودوكو الأطفال', text: 'لغز 4×4 بسيط يقوي المنطق والتركيز.', color: const Color(0xFFF97316), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const MiniSudokuPage()))),
-        const SizedBox(height: 12),
-        GameInfoCard(icon: Icons.route_rounded, title: 'المتاهة الذكية', text: 'حرّك البطل للوصول إلى النجمة بأقل خطوات.', color: const Color(0xFF22C55E), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SmartMazePage()))),
-        const SizedBox(height: 12),
-        GameInfoCard(icon: Icons.calculate_rounded, title: 'الحساب السريع', text: 'اختر ناتج الجمع والطرح بسرعة وتركيز.', color: const Color(0xFF7C3AED), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const QuickMathPage()))),
-        const SizedBox(height: 18),
-        const Text('ألعاب جديدة للإبداع والملاحظة', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, fontFamily: 'Changa')),
-        const SizedBox(height: 12),
-        GameInfoCard(icon: Icons.visibility_rounded, title: 'ابحث عن المختلف', text: 'اختر الشكل المختلف بين مجموعة أشكال.', color: const Color(0xFF14B8A6), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const OddOneOutPage()))),
-        const SizedBox(height: 12),
-        GameInfoCard(icon: Icons.filter_vintage_rounded, title: 'ظل الشكل', text: 'طابق الشكل مع ظله الصحيح.', color: const Color(0xFF8B5CF6), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const ShapeShadowPage()))),
-        const SizedBox(height: 12),
-        GameInfoCard(icon: Icons.sort_rounded, title: 'رتّب التسلسل', text: 'رتب العناصر حسب المنطق الصحيح.', color: const Color(0xFFEF4444), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SequenceOrderPage()))),
-        const SizedBox(height: 18),
-        const Text('ألعاب تعليمية للرسم والكتابة', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, fontFamily: 'Changa')),
-        const SizedBox(height: 12),
-        GameInfoCard(icon: Icons.draw_rounded, title: 'تلوين الحروف الكبيرة', text: 'لوّن الحرف الإنجليزي الكبير بإصبعك كأنك تكتبه.', color: const Color(0xFF4F46E5), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const CapitalLetterColoringPage()))),
-        const SizedBox(height: 20),
-        const _TipsCard(),
+        for (var i = 0; i < sections.length; i++)
+          Expanded(
+            child: Padding(
+              padding: EdgeInsetsDirectional.only(start: i == 0 ? 0 : 6),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () => onSelect(i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  height: 46,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: selected == i ? sections[i].color : Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: selected == i ? sections[i].color : const Color(0xFFE2E8F0)),
+                    boxShadow: selected == i ? <BoxShadow>[BoxShadow(color: sections[i].color.withAlpha(50), blurRadius: 10, offset: const Offset(0, 4))] : null,
+                  ),
+                  child: Text(
+                    sections[i].title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: selected == i ? Colors.white : const Color(0xFF475569),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
+    );
+  }
+}
+
+class _GamesGrid extends StatelessWidget {
+  const _GamesGrid({required this.items});
+  final List<_GameItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxRows = items.length <= 4 ? 2 : 3;
+        final cardHeight = ((constraints.maxHeight - ((maxRows - 1) * 8)) / maxRows).clamp(70.0, 108.0).toDouble();
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            for (final item in items)
+              SizedBox(
+                width: (constraints.maxWidth - 8) / 2,
+                height: cardHeight,
+                child: _CompactGameCard(item: item),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CompactGameCard extends StatelessWidget {
+  const _CompactGameCard({required this.item});
+  final _GameItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: item.onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(colors: <Color>[item.color, item.color.withAlpha(190)]),
+                      boxShadow: <BoxShadow>[BoxShadow(color: item.color.withAlpha(70), blurRadius: 8, offset: const Offset(0, 3))],
+                    ),
+                    child: Icon(item.icon, color: Colors.white, size: 20),
+                  ),
+                  const Spacer(),
+                  Icon(Icons.arrow_back_ios_new_rounded, size: 13, color: item.color),
+                ],
+              ),
+              const Spacer(),
+              Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, fontFamily: 'Changa')),
+              const SizedBox(height: 2),
+              Text(item.text, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -64,22 +219,23 @@ class _HeroPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      height: 112,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         gradient: const LinearGradient(colors: <Color>[Color(0xFF7C3AED), Color(0xFF06B6D4)], begin: Alignment.topRight, end: Alignment.bottomLeft),
-        boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x337C3AED), blurRadius: 24, offset: Offset(0, 12))],
+        boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x337C3AED), blurRadius: 18, offset: Offset(0, 8))],
       ),
       child: const Row(crossAxisAlignment: CrossAxisAlignment.center, children: <Widget>[
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-          Text('ألعب، فكّر، وتعلّم', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800, fontFamily: 'Changa')),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+          Text('ألعب، فكّر، وتعلّم', style: TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w800, fontFamily: 'Changa')),
+          SizedBox(height: 6),
+          Text('اختر قسمًا وابدأ اللعب بدون تمرير.', style: TextStyle(color: Color(0xFFFFF7D6), fontSize: 13)),
           SizedBox(height: 8),
-          Text('ألعاب ممتعة للأطفال، بدون إنترنت.', style: TextStyle(color: Color(0xFFFFF7D6), fontSize: 15)),
-          SizedBox(height: 16),
           _StarsBadge(),
         ])),
-        SizedBox(width: 10),
-        StarMascot(size: 92, mood: MascotMood.happy),
+        SizedBox(width: 8),
+        StarMascot(size: 74, mood: MascotMood.happy),
       ]),
     );
   }
@@ -94,69 +250,15 @@ class _StarsBadge extends StatelessWidget {
       builder: (context, snapshot) {
         final stars = snapshot.data ?? 0;
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(color: const Color(0x2EFFFFFF), borderRadius: BorderRadius.circular(999), border: Border.all(color: const Color(0x66FFFFFF))),
           child: Row(mainAxisSize: MainAxisSize.min, children: <Widget>[
-            const Icon(Icons.star_rounded, color: Color(0xFFFFD65C), size: 20),
-            const SizedBox(width: 6),
-            Text('$stars نجمة', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+            const Icon(Icons.star_rounded, color: Color(0xFFFFD65C), size: 18),
+            const SizedBox(width: 5),
+            Text('$stars نجمة', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
           ]),
         );
       },
-    );
-  }
-}
-
-class GameInfoCard extends StatelessWidget {
-  const GameInfoCard({super.key, required this.icon, required this.title, required this.text, required this.color, required this.onTap});
-  final IconData icon;
-  final String title;
-  final String text;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(children: <Widget>[
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(colors: <Color>[color, color.withAlpha(190)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                boxShadow: <BoxShadow>[BoxShadow(color: color.withAlpha(80), blurRadius: 10, offset: const Offset(0, 4))],
-              ),
-              child: Icon(icon, color: Colors.white, size: 26),
-            ),
-            const SizedBox(width: 14),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-              Text(title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, fontFamily: 'Changa')),
-              const SizedBox(height: 5),
-              Text(text, style: const TextStyle(color: Color(0xFF64748B))),
-            ])),
-            Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: color),
-          ]),
-        ),
-      ),
-    );
-  }
-}
-
-class _TipsCard extends StatelessWidget {
-  const _TipsCard();
-  @override
-  Widget build(BuildContext context) {
-    return const Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Text('نصيحة: اجعل وقت اللعب قصيرًا وممتعًا، وشجع الطفل بعد كل محاولة.', style: TextStyle(color: Color(0xFF64748B))),
-      ),
     );
   }
 }
