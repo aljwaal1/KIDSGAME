@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../games/capital_letter_coloring_page.dart';
+import '../games/dahdel_page.dart';
 import '../games/memory_pairs_page.dart';
 import '../games/mini_sudoku_page.dart';
 import '../games/odd_one_out_page.dart';
 import '../games/pattern_challenge_page.dart';
 import '../games/pebble_harra_page.dart';
 import '../games/quick_math_page.dart';
+import '../games/ring_guess_page.dart';
+import '../games/seega_page.dart';
 import '../games/sequence_order_page.dart';
+import '../games/seven_stones_page.dart';
 import '../games/shape_shadow_page.dart';
 import '../games/smart_maze_page.dart';
 import '../services/score_service.dart';
@@ -48,7 +52,11 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
         _GameItem(Icons.draw_rounded, 'تلوين الحروف الكبيرة', 'اتبع السهم', const Color(0xFF4F46E5), () => _open(const CapitalLetterColoringPage())),
       ]),
       _GameSection('تراث', const Color(0xFFB45309), <_GameItem>[
-        _GameItem(Icons.scatter_plot_rounded, 'الحَرّة بالحصى', 'لعبة زمان بالحصى', const Color(0xFFB45309), () => _open(const PebbleHarraPage())),
+        _GameItem(Icons.scatter_plot_rounded, 'الحَرّة بالحصى', 'ثلاث حصوات على خط', const Color(0xFFB45309), () => _open(const PebbleHarraPage())),
+        _GameItem(Icons.sports_baseball_rounded, 'الدحدل', 'دحرج نحو الهدف', const Color(0xFF0F766E), () => _open(const DahdelPage())),
+        _GameItem(Icons.layers_rounded, 'سبع حجارة', 'ابنِ البرج بدقة', const Color(0xFFF97316), () => _open(const SevenStonesPage())),
+        _GameItem(Icons.grid_4x4_rounded, 'السيجا', 'حصى وحركة وأكل', const Color(0xFF1E3A8A), () => _open(const SeegaPage())),
+        _GameItem(Icons.diamond_rounded, 'الخاتم', 'اختر اليد الصحيحة', const Color(0xFFF59E0B), () => _open(const RingGuessPage())),
       ]),
     ];
 
@@ -133,11 +141,7 @@ class _SectionTabs extends StatelessWidget {
                     sections[i].title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: selected == i ? Colors.white : const Color(0xFF475569),
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: selected == i ? Colors.white : const Color(0xFF475569), fontWeight: FontWeight.w900, fontSize: 12),
                   ),
                 ),
               ),
@@ -163,11 +167,7 @@ class _GamesGrid extends StatelessWidget {
           runSpacing: 8,
           children: <Widget>[
             for (final item in items)
-              SizedBox(
-                width: (constraints.maxWidth - 8) / 2,
-                height: cardHeight,
-                child: _CompactGameCard(item: item),
-              ),
+              SizedBox(width: (constraints.maxWidth - 8) / 2, height: cardHeight, child: _CompactGameCard(item: item)),
           ],
         );
       },
@@ -187,31 +187,17 @@ class _CompactGameCard extends StatelessWidget {
         onTap: item.onTap,
         child: Padding(
           padding: const EdgeInsets.all(10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(colors: <Color>[item.color, item.color.withAlpha(190)]),
-                      boxShadow: <BoxShadow>[BoxShadow(color: item.color.withAlpha(70), blurRadius: 8, offset: const Offset(0, 3))],
-                    ),
-                    child: Icon(item.icon, color: Colors.white, size: 20),
-                  ),
-                  const Spacer(),
-                  Icon(Icons.arrow_back_ios_new_rounded, size: 13, color: item.color),
-                ],
-              ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+            Row(children: <Widget>[
+              Container(width: 38, height: 38, decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: <Color>[item.color, item.color.withAlpha(190)]), boxShadow: <BoxShadow>[BoxShadow(color: item.color.withAlpha(70), blurRadius: 8, offset: const Offset(0, 3))]), child: Icon(item.icon, color: Colors.white, size: 20)),
               const Spacer(),
-              Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, fontFamily: 'Changa')),
-              const SizedBox(height: 2),
-              Text(item.text, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
-            ],
-          ),
+              Icon(Icons.arrow_back_ios_new_rounded, size: 13, color: item.color),
+            ]),
+            const Spacer(),
+            Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, fontFamily: 'Changa')),
+            const SizedBox(height: 2),
+            Text(item.text, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+          ]),
         ),
       ),
     );
@@ -225,11 +211,7 @@ class _HeroPanel extends StatelessWidget {
     return Container(
       height: 112,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(colors: <Color>[Color(0xFF7C3AED), Color(0xFF06B6D4)], begin: Alignment.topRight, end: Alignment.bottomLeft),
-        boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x337C3AED), blurRadius: 18, offset: Offset(0, 8))],
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(28), gradient: const LinearGradient(colors: <Color>[Color(0xFF7C3AED), Color(0xFF06B6D4)], begin: Alignment.topRight, end: Alignment.bottomLeft), boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x337C3AED), blurRadius: 18, offset: Offset(0, 8))]),
       child: const Row(crossAxisAlignment: CrossAxisAlignment.center, children: <Widget>[
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
           Text('ألعب، فكّر، وتعلّم', style: TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w800, fontFamily: 'Changa')),
