@@ -95,31 +95,37 @@ class _SlidingPuzzlePageState extends State<SlidingPuzzlePage> {
 
   @override
   Widget build(BuildContext context) {
-    final bestText = bestMoves != null ? '  •  أفضل نتيجة: $bestMoves' : '';
+    final bestText = bestMoves != null ? '  •  أفضل: $bestMoves' : '';
     return ConfettiOverlay(
       key: confettiKey,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-        children: [
-          GameHeader(title: 'بزل الأرقام', subtitle: solved ? 'ممتاز، رتبت الأرقام 🎉' : 'الحركات: $moves$bestText', color: const Color(0xFFF97316), onReset: shuffle),
-          const SizedBox(height: 12),
-          Row(children: [
-            Expanded(child: ChoiceChip(label: const Text('سهل 3×3'), selected: difficulty == PuzzleDifficulty.easy, onSelected: (_) => setDifficulty(PuzzleDifficulty.easy))),
-            const SizedBox(width: 10),
-            Expanded(child: ChoiceChip(label: const Text('صعب 4×4'), selected: difficulty == PuzzleDifficulty.hard, onSelected: (_) => setDifficulty(PuzzleDifficulty.hard))),
-          ]),
-          const SizedBox(height: 12),
-          const Text('رتب الأرقام بالترتيب واترك المربع الفارغ في النهاية.', style: TextStyle(color: Color(0xFF64748B))),
-          const SizedBox(height: 16),
-          AspectRatio(
-            aspectRatio: 1,
-            child: LayoutBuilder(builder: (context, constraints) {
-              final totalSize = constraints.maxWidth;
-              final cell = totalSize / gridSize;
-              return Stack(children: [for (var value = 1; value < gridSize * gridSize; value++) _buildTile(value, cell)]);
-            }),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+        child: Column(
+          children: <Widget>[
+            GameHeader(title: 'بزل الأرقام', subtitle: solved ? 'ممتاز، رتبت الأرقام 🎉' : 'الحركات: $moves$bestText', color: const Color(0xFFF97316), onReset: shuffle),
+            const SizedBox(height: 8),
+            Row(children: <Widget>[
+              Expanded(child: ChoiceChip(label: const Text('سهل 3×3'), selected: difficulty == PuzzleDifficulty.easy, onSelected: (_) => setDifficulty(PuzzleDifficulty.easy))),
+              const SizedBox(width: 8),
+              Expanded(child: ChoiceChip(label: const Text('صعب 4×4'), selected: difficulty == PuzzleDifficulty.hard, onSelected: (_) => setDifficulty(PuzzleDifficulty.hard))),
+            ]),
+            const SizedBox(height: 8),
+            const Text('رتب الأرقام واترك المربع الفارغ في النهاية.', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Color(0xFF64748B))),
+            const SizedBox(height: 8),
+            Expanded(
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: LayoutBuilder(builder: (context, constraints) {
+                    final totalSize = constraints.maxWidth;
+                    final cell = totalSize / gridSize;
+                    return Stack(children: <Widget>[for (var value = 1; value < gridSize * gridSize; value++) _buildTile(value, cell)]);
+                  }),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -137,17 +143,17 @@ class _SlidingPuzzlePageState extends State<SlidingPuzzlePage> {
       width: cell,
       height: cell,
       child: Padding(
-        padding: const EdgeInsets.all(5),
+        padding: EdgeInsets.all(gridSize == 3 ? 5 : 3),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
           onTap: () => move(index),
           child: Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFFFFD9A8), Color(0xFFFB923C)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              gradient: const LinearGradient(colors: <Color>[Color(0xFFFFD9A8), Color(0xFFFB923C)], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(18),
-              boxShadow: const [BoxShadow(color: Color(0x33C2410C), blurRadius: 8, offset: Offset(0, 4))],
+              boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x33C2410C), blurRadius: 8, offset: Offset(0, 4))],
             ),
-            child: Center(child: Text('$value', style: TextStyle(color: Colors.white, fontSize: gridSize == 3 ? 32 : 24, fontWeight: FontWeight.w800))),
+            child: Center(child: Text('$value', style: TextStyle(color: Colors.white, fontSize: gridSize == 3 ? 32 : 22, fontWeight: FontWeight.w800))),
           ),
         ),
       ),
