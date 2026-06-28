@@ -80,22 +80,25 @@ class _OddOneOutPageState extends State<OddOneOutPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('ابحث عن المختلف')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 100),
-        children: <Widget>[
-          _TopCard(title: 'أي صورة لا تشبه الباقي؟', subtitle: 'النقاط: $score  •  المستوى: $level', icon: Icons.visibility_rounded, color: const Color(0xFF14B8A6)),
-          const SizedBox(height: 18),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: items.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 14),
-            itemBuilder: (BuildContext context, int index) {
-              final item = items[index];
-              return _PictureButton(item: item, onTap: () => _answer(index));
-            },
-          ),
-        ],
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        child: Column(
+          children: <Widget>[
+            _TopCard(title: 'أي صورة لا تشبه الباقي؟', subtitle: 'النقاط: $score  •  المستوى: $level', icon: Icons.visibility_rounded, color: const Color(0xFF14B8A6)),
+            const SizedBox(height: 10),
+            Expanded(
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: items.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10),
+                itemBuilder: (BuildContext context, int index) {
+                  final item = items[index];
+                  return _PictureButton(item: item, onTap: () => _answer(index));
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -130,13 +133,13 @@ class _PictureButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Container(
-                width: 72,
-                height: 72,
+                width: 62,
+                height: 62,
                 decoration: BoxDecoration(shape: BoxShape.circle, color: item.color.withAlpha(35), border: Border.all(color: item.color.withAlpha(90), width: 2)),
-                child: Icon(item.icon, color: item.color, size: 42),
+                child: Icon(item.icon, color: item.color, size: 36),
               ),
-              const SizedBox(height: 10),
-              Text(item.label, style: const TextStyle(fontFamily: 'Changa', fontSize: 20, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              Text(item.label, style: const TextStyle(fontFamily: 'Changa', fontSize: 18, fontWeight: FontWeight.w800)),
             ],
           ),
         ),
@@ -155,13 +158,14 @@ class _TopCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(26), gradient: LinearGradient(colors: <Color>[color, color.withAlpha(190)])),
+      height: 92,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), gradient: LinearGradient(colors: <Color>[color, color.withAlpha(190)])),
       child: Row(children: <Widget>[
-        Icon(icon, color: Colors.white, size: 42),
-        const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-          Text(title, style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 22, fontWeight: FontWeight.w900)),
+        Icon(icon, color: Colors.white, size: 38),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 19, fontWeight: FontWeight.w900)),
           const SizedBox(height: 4),
           Text(subtitle, style: const TextStyle(color: Color(0xFFFFF7D6))),
         ])),
