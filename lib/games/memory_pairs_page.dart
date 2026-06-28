@@ -75,14 +75,39 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('ذاكرة الصور'), actions: <Widget>[IconButton(onPressed: _newGame, icon: const Icon(Icons.refresh_rounded))]), body: ListView(padding: const EdgeInsets.fromLTRB(18, 12, 18, 100), children: <Widget>[
-      Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(26), gradient: const LinearGradient(colors: <Color>[Color(0xFFEC4899), Color(0xFF8B5CF6)])), child: Text('تذكّر أماكن الصور المتشابهة\nالحركات: $moves', style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 22, fontWeight: FontWeight.w900))),
-      const SizedBox(height: 18),
-      GridView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: cards.length, gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 14), itemBuilder: (BuildContext context, int index) {
-        final _CardItem card = cards[index];
-        return Card(child: InkWell(borderRadius: BorderRadius.circular(24), onTap: () => _tap(index), child: AnimatedContainer(duration: const Duration(milliseconds: 200), decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), gradient: LinearGradient(colors: card.open || card.done ? <Color>[const Color(0xFFFFE4E6), const Color(0xFFEDE9FE)] : <Color>[const Color(0xFF7C3AED), const Color(0xFF06B6D4)])), child: Center(child: Icon(card.open || card.done ? card.icon : Icons.question_mark_rounded, color: card.open || card.done ? const Color(0xFF7C3AED) : Colors.white, size: 54)))));
-      }),
-    ]));
+    return Scaffold(
+      appBar: AppBar(title: const Text('ذاكرة الصور'), actions: <Widget>[IconButton(onPressed: _newGame, icon: const Icon(Icons.refresh_rounded))]),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        child: Column(
+          children: <Widget>[
+            Container(
+              height: 92,
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), gradient: const LinearGradient(colors: <Color>[Color(0xFFEC4899), Color(0xFF8B5CF6)])),
+              child: Row(children: <Widget>[
+                const Icon(Icons.psychology_rounded, color: Colors.white, size: 42),
+                const SizedBox(width: 12),
+                Expanded(child: Text('تذكّر الصور المتشابهة\nالحركات: $moves', style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 20, fontWeight: FontWeight.w900))),
+              ]),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: cards.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: .78),
+                itemBuilder: (BuildContext context, int index) {
+                  final _CardItem card = cards[index];
+                  return Card(child: InkWell(borderRadius: BorderRadius.circular(22), onTap: () => _tap(index), child: AnimatedContainer(duration: const Duration(milliseconds: 200), decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), gradient: LinearGradient(colors: card.open || card.done ? <Color>[const Color(0xFFFFE4E6), const Color(0xFFEDE9FE)] : <Color>[const Color(0xFF7C3AED), const Color(0xFF06B6D4)])), child: Center(child: Icon(card.open || card.done ? card.icon : Icons.question_mark_rounded, color: card.open || card.done ? const Color(0xFF7C3AED) : Colors.white, size: 40)))));
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
