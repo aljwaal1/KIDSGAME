@@ -13,12 +13,12 @@ class CapitalLetterColoringPage extends StatefulWidget {
 }
 
 class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
-  static const List<String> _letters = <String>[
+  static const List<String> letters = <String>[
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
     'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
   ];
 
-  static const List<Color> _palette = <Color>[
+  static const List<Color> colors = <Color>[
     Color(0xFFEC4899),
     Color(0xFF8B5CF6),
     Color(0xFF06B6D4),
@@ -26,56 +26,56 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
     Color(0xFFF97316),
   ];
 
-  int _letterIndex = 0;
-  int _colorIndex = 0;
-  double _traceProgress = 0;
-  bool _celebrated = false;
+  int letterIndex = 0;
+  int colorIndex = 0;
+  double progress = 0;
+  bool completed = false;
 
-  String get _letter => _letters[_letterIndex];
-  Color get _selectedColor => _palette[_colorIndex];
+  String get letter => letters[letterIndex];
+  Color get selectedColor => colors[colorIndex];
 
-  void _tracePosition(Offset position, Size canvasSize) {
-    final hit = _LetterGuide.nearestProgress(_letter, canvasSize, position);
+  void _handleTrace(Offset point, Size size) {
+    final hit = LetterTraceMath.hitProgress(letter, size, point);
     if (!hit.accepted) return;
 
     setState(() {
-      _traceProgress = math.max(_traceProgress, hit.progress);
+      progress = math.max(progress, hit.progress).clamp(0.0, 1.0).toDouble();
     });
 
-    if (_traceProgress >= 0.92 && !_celebrated) {
-      _celebrated = true;
+    if (progress >= 0.92 && !completed) {
+      completed = true;
       ScoreService.instance.addStars(2);
       SoundService.instance.play('win.wav');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('أحسنت! أتممت مسار حرف $_letter')),
+          SnackBar(content: Text('أحسنت! أتممت مسار حرف $letter')),
         );
       }
     }
   }
 
-  void _clear() {
+  void _reset() {
     setState(() {
-      _traceProgress = 0;
-      _celebrated = false;
+      progress = 0;
+      completed = false;
     });
     SoundService.instance.play('click.wav');
   }
 
-  void _nextLetter() {
+  void _next() {
     setState(() {
-      _letterIndex = (_letterIndex + 1) % _letters.length;
-      _traceProgress = 0;
-      _celebrated = false;
+      letterIndex = (letterIndex + 1) % letters.length;
+      progress = 0;
+      completed = false;
     });
     SoundService.instance.play('chime.wav');
   }
 
-  void _previousLetter() {
+  void _previous() {
     setState(() {
-      _letterIndex = (_letterIndex - 1 + _letters.length) % _letters.length;
-      _traceProgress = 0;
-      _celebrated = false;
+      letterIndex = (letterIndex - 1 + letters.length) % letters.length;
+      progress = 0;
+      completed = false;
     });
     SoundService.instance.play('click.wav');
   }
@@ -83,7 +83,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
   void _sayLetter() {
     SoundService.instance.play('tap.wav');
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('الحرف الحالي: $_letter')),
+      SnackBar(content: Text('الحرف الحالي: $letter')),
     );
   }
 
@@ -94,7 +94,11 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
       appBar: AppBar(
         title: const Text('تلوين الحروف الكبيرة'),
         actions: <Widget>[
-          IconButton(tooltip: 'إعادة المسار', onPressed: _clear, icon: const Icon(Icons.refresh_rounded)),
+          IconButton(
+            tooltip: 'إعادة المسار',
+            onPressed: _reset,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
         ],
       ),
       body: SafeArea(
@@ -102,7 +106,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
           child: Column(
             children: <Widget>[
-              _Header(letter: _letter, progress: _traceProgress),
+              _Header(letter: letter, progress: progress),
               const SizedBox(height: 8),
               Expanded(
                 child: Card(
@@ -114,15 +118,15 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
                         behavior: HitTestBehavior.opaque,
                         onPanStart: (details) {
                           SoundService.instance.play('move.wav');
-                          _tracePosition(details.localPosition, canvasSize);
+                          _handleTrace(details.localPosition, canvasSize);
                         },
-                        onPanUpdate: (details) => _tracePosition(details.localPosition, canvasSize),
+                        onPanUpdate: (details) => _handleTrace(details.localPosition, canvasSize),
                         child: CustomPaint(
                           size: canvasSize,
-                          painter: _LetterTracingPainter(
-                            letter: _letter,
-                            progress: _traceProgress,
-                            color: _selectedColor,
+                          painter: _TracePainter(
+                            letter: letter,
+                            progress: progress,
+                            color: selectedColor,
                           ),
                         ),
                       );
@@ -131,18 +135,22 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
                 ),
               ),
               const SizedBox(height: 8),
-              _ColorPicker(colors: _palette, selectedIndex: _colorIndex, onSelect: (int index) {
-                setState(() => _colorIndex = index);
-                SoundService.instance.play('click.wav');
-              }),
+              _ColorPicker(
+                colors: colors,
+                selectedIndex: colorIndex,
+                onSelect: (index) {
+                  setState(() => colorIndex = index);
+                  SoundService.instance.play('click.wav');
+                },
+              ),
               const SizedBox(height: 8),
               Row(
                 children: <Widget>[
-                  Expanded(child: OutlinedButton.icon(onPressed: _previousLetter, icon: const Icon(Icons.arrow_back_rounded), label: const Text('السابق'))),
+                  Expanded(child: OutlinedButton.icon(onPressed: _previous, icon: const Icon(Icons.arrow_back_rounded), label: const Text('السابق'))),
                   const SizedBox(width: 8),
-                  Expanded(child: FilledButton.icon(onPressed: _sayLetter, icon: const Icon(Icons.volume_up_rounded), label: Text(_letter))),
+                  Expanded(child: FilledButton.icon(onPressed: _sayLetter, icon: const Icon(Icons.volume_up_rounded), label: Text(letter))),
                   const SizedBox(width: 8),
-                  Expanded(child: OutlinedButton.icon(onPressed: _nextLetter, icon: const Icon(Icons.arrow_forward_rounded), label: const Text('التالي'))),
+                  Expanded(child: OutlinedButton.icon(onPressed: _next, icon: const Icon(Icons.arrow_forward_rounded), label: const Text('التالي'))),
                 ],
               ),
             ],
@@ -248,8 +256,8 @@ class _ColorPicker extends StatelessWidget {
   }
 }
 
-class _LetterTracingPainter extends CustomPainter {
-  const _LetterTracingPainter({required this.letter, required this.progress, required this.color});
+class _TracePainter extends CustomPainter {
+  const _TracePainter({required this.letter, required this.progress, required this.color});
   final String letter;
   final double progress;
   final Color color;
@@ -257,43 +265,42 @@ class _LetterTracingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFFF8FAFC));
-    _paintGrid(canvas, size);
-    _paintLetter(canvas, size, PaintingStyle.stroke, const Color(0xFF0F172A), 10);
-    _paintLetter(canvas, size, PaintingStyle.stroke, const Color(0xFFE2E8F0), 26);
-    _paintLetter(canvas, size, PaintingStyle.stroke, const Color(0xFF0F172A), 10);
+    _drawGrid(canvas, size);
+    _drawBigLetter(canvas, size, const Color(0xFFE2E8F0), 28);
+    _drawBigLetter(canvas, size, const Color(0xFF0F172A), 10);
 
-    final path = _LetterGuide.pathFor(letter, size);
-    final guidePaint = Paint()
+    final path = LetterTraceMath.pathFor(letter, size);
+    final basePaint = Paint()
       ..color = const Color(0xFFCBD5E1)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.shortestSide * 0.085
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    canvas.drawPath(path, guidePaint);
-
-    final filledPaint = Paint()
-      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = size.shortestSide * 0.09
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
-    _drawPartialPath(canvas, path, progress, filledPaint);
+    canvas.drawPath(path, basePaint);
 
-    final thinPaint = Paint()
-      ..color = Colors.white.withAlpha(190)
+    final fillPaint = Paint()
+      ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = size.shortestSide * 0.025
+      ..strokeWidth = size.shortestSide * 0.095
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
-    _drawPartialPath(canvas, path, progress, thinPaint);
+    _drawPartial(canvas, path, progress, fillPaint);
 
-    _drawStartAndMovingArrow(canvas, path, progress, size);
+    final shinePaint = Paint()
+      ..color = Colors.white.withAlpha(170)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.shortestSide * 0.024
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    _drawPartial(canvas, path, progress, shinePaint);
+
+    _drawStartAndArrow(canvas, path, progress, size);
   }
 
-  void _paintGrid(Canvas canvas, Size size) {
+  void _drawGrid(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = const Color(0xFFE0E7FF)
-      ..strokeWidth = 1.5;
+      ..strokeWidth = 1.4;
     for (var x = 0.0; x <= size.width; x += size.width / 5) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
@@ -302,10 +309,31 @@ class _LetterTracingPainter extends CustomPainter {
     }
   }
 
-  void _drawPartialPath(Canvas canvas, Path path, double progress, Paint paint) {
-    final total = _LetterGuide.totalLength(path);
+  void _drawBigLetter(Canvas canvas, Size size, Color color, double strokeWidth) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: letter,
+        style: TextStyle(
+          fontSize: size.shortestSide * 0.72,
+          fontWeight: FontWeight.w900,
+          fontFamily: 'Cairo',
+          height: 1,
+          foreground: Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = strokeWidth
+            ..strokeJoin = StrokeJoin.round
+            ..color = color,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    painter.paint(canvas, Offset((size.width - painter.width) / 2, (size.height - painter.height) / 2 + size.height * 0.03));
+  }
+
+  void _drawPartial(Canvas canvas, Path path, double progress, Paint paint) {
+    final total = LetterTraceMath.totalLength(path);
     if (total <= 0 || progress <= 0) return;
-    var remaining = total * progress.clamp(0.0, 1.0);
+    var remaining = total * progress.clamp(0.0, 1.0).toDouble();
     for (final metric in path.computeMetrics()) {
       if (remaining <= 0) break;
       final length = math.min(metric.length, remaining);
@@ -314,24 +342,20 @@ class _LetterTracingPainter extends CustomPainter {
     }
   }
 
-  void _drawStartAndMovingArrow(Canvas canvas, Path path, double progress, Size size) {
-    final total = _LetterGuide.totalLength(path);
+  void _drawStartAndArrow(Canvas canvas, Path path, double progress, Size size) {
+    final total = LetterTraceMath.totalLength(path);
     if (total <= 0) return;
-    final start = _LetterGuide.tangentAt(path, 0)?.position ?? Offset(size.width * 0.25, size.height * 0.25);
-    final tangent = _LetterGuide.tangentAt(path, math.max(0.08, progress) * total);
+    final start = LetterTraceMath.pointAt(path, 0) ?? Offset(size.width * 0.30, size.height * 0.25);
+    final arrow = LetterTraceMath.pointAndAngleAt(path, math.max(0.08, progress) * total);
 
     canvas.drawCircle(start, 14, Paint()..color = const Color(0xFF22C55E));
-    final startText = TextPainter(
-      text: const TextSpan(text: 'ابدأ', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900)),
-      textDirection: TextDirection.rtl,
-    )..layout();
-    startText.paint(canvas, start.translate(-startText.width / 2, -startText.height / 2));
+    final text = TextPainter(text: const TextSpan(text: 'ابدأ', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900)), textDirection: TextDirection.rtl)..layout();
+    text.paint(canvas, start.translate(-text.width / 2, -text.height / 2));
 
-    if (tangent == null) return;
-    final tip = tangent.position;
-    final arrowColor = progress >= 0.92 ? const Color(0xFF22C55E) : const Color(0xFFF59E0B);
+    if (arrow == null) return;
+    final tip = arrow.position;
     canvas.drawCircle(tip, 20, Paint()..color = Colors.white.withAlpha(230));
-    _drawArrowHead(canvas, tip, tangent.angle, arrowColor);
+    _drawArrowHead(canvas, tip, arrow.angle, progress >= 0.92 ? const Color(0xFF22C55E) : const Color(0xFFF59E0B));
   }
 
   void _drawArrowHead(Canvas canvas, Offset tip, double angle, Color color) {
@@ -346,55 +370,33 @@ class _LetterTracingPainter extends CustomPainter {
     canvas.drawPath(path, Paint()..color = color);
   }
 
-  void _paintLetter(Canvas canvas, Size size, PaintingStyle style, Color color, double strokeWidth) {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: letter,
-        style: TextStyle(
-          fontSize: size.shortestSide * 0.72,
-          fontWeight: FontWeight.w900,
-          fontFamily: 'Cairo',
-          height: 1,
-          foreground: Paint()
-            ..style = style
-            ..strokeWidth = strokeWidth
-            ..strokeJoin = StrokeJoin.round
-            ..color = color,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final offset = Offset((size.width - painter.width) / 2, (size.height - painter.height) / 2 + size.height * 0.03);
-    painter.paint(canvas, offset);
-  }
-
   @override
-  bool shouldRepaint(covariant _LetterTracingPainter oldDelegate) {
+  bool shouldRepaint(covariant _TracePainter oldDelegate) {
     return oldDelegate.letter != letter || oldDelegate.progress != progress || oldDelegate.color != color;
   }
 }
 
-class _TraceHit {
-  const _TraceHit({required this.accepted, required this.progress});
+class TraceHit {
+  const TraceHit({required this.accepted, required this.progress});
   final bool accepted;
   final double progress;
 }
 
-class _LetterGuide {
+class TracePoint {
+  const TracePoint(this.position, this.angle);
+  final Offset position;
+  final double angle;
+}
+
+class LetterTraceMath {
   static Path pathFor(String letter, Size size) {
     final w = size.width;
     final h = size.height;
-    final l = letter.toUpperCase();
-    switch (l) {
+    switch (letter.toUpperCase()) {
       case 'A':
-        return Path()
-          ..moveTo(w * .30, h * .78)..lineTo(w * .50, h * .18)..lineTo(w * .70, h * .78)
-          ..moveTo(w * .40, h * .55)..lineTo(w * .60, h * .55);
+        return Path()..moveTo(w * .30, h * .78)..lineTo(w * .50, h * .18)..lineTo(w * .70, h * .78)..moveTo(w * .40, h * .55)..lineTo(w * .60, h * .55);
       case 'B':
-        return Path()
-          ..moveTo(w * .35, h * .18)..lineTo(w * .35, h * .80)
-          ..moveTo(w * .35, h * .20)..quadraticBezierTo(w * .75, h * .24, w * .40, h * .50)
-          ..quadraticBezierTo(w * .78, h * .72, w * .35, h * .80);
+        return Path()..moveTo(w * .35, h * .18)..lineTo(w * .35, h * .80)..moveTo(w * .35, h * .20)..quadraticBezierTo(w * .75, h * .24, w * .40, h * .50)..quadraticBezierTo(w * .78, h * .72, w * .35, h * .80);
       case 'C':
         return Path()..moveTo(w * .72, h * .25)..quadraticBezierTo(w * .30, h * .12, w * .28, h * .50)..quadraticBezierTo(w * .30, h * .86, w * .72, h * .74);
       case 'D':
@@ -448,16 +450,16 @@ class _LetterGuide {
     }
   }
 
-  static _TraceHit nearestProgress(String letter, Size size, Offset point) {
+  static TraceHit hitProgress(String letter, Size size, Offset point) {
     final path = pathFor(letter, size);
     final total = totalLength(path);
-    if (total <= 0) return const _TraceHit(accepted: false, progress: 0);
+    if (total <= 0) return const TraceHit(accepted: false, progress: 0);
 
     var bestDistance = double.infinity;
     var bestProgress = 0.0;
     var consumed = 0.0;
     for (final metric in path.computeMetrics()) {
-      final step = math.max(6.0, metric.length / 40);
+      final step = math.max(6.0, metric.length / 40).toDouble();
       for (var d = 0.0; d <= metric.length; d += step) {
         final tangent = metric.getTangentForOffset(d);
         if (tangent == null) continue;
@@ -471,7 +473,7 @@ class _LetterGuide {
     }
 
     final tolerance = size.shortestSide * 0.13;
-    return _TraceHit(accepted: bestDistance <= tolerance, progress: bestProgress.clamp(0.0, 1.0));
+    return TraceHit(accepted: bestDistance <= tolerance, progress: bestProgress.clamp(0.0, 1.0).toDouble());
   }
 
   static double totalLength(Path path) {
@@ -482,14 +484,25 @@ class _LetterGuide {
     return total;
   }
 
-  static Tangent? tangentAt(Path path, double distance) {
+  static Offset? pointAt(Path path, double distance) {
+    final point = pointAndAngleAt(path, distance);
+    return point?.position;
+  }
+
+  static TracePoint? pointAndAngleAt(Path path, double distance) {
     var remaining = distance;
     for (final metric in path.computeMetrics()) {
-      if (remaining <= metric.length) return metric.getTangentForOffset(remaining);
+      if (remaining <= metric.length) {
+        final tangent = metric.getTangentForOffset(remaining);
+        if (tangent == null) return null;
+        return TracePoint(tangent.position, tangent.angle);
+      }
       remaining -= metric.length;
     }
     final metrics = path.computeMetrics().toList();
     if (metrics.isEmpty) return null;
-    return metrics.last.getTangentForOffset(metrics.last.length);
+    final tangent = metrics.last.getTangentForOffset(metrics.last.length);
+    if (tangent == null) return null;
+    return TracePoint(tangent.position, tangent.angle);
   }
 }
