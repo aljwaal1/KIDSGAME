@@ -61,29 +61,34 @@ class _QuickMathPageState extends State<QuickMathPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('الحساب السريع')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 100),
-        children: <Widget>[
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(28), gradient: const LinearGradient(colors: <Color>[Color(0xFF7C3AED), Color(0xFF0EA5E9)])),
-            child: Column(children: <Widget>[
-              const Icon(Icons.calculate_rounded, color: Colors.white, size: 48),
-              const SizedBox(height: 8),
-              Text('$a ${plus ? '+' : '-'} $b = ؟', style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 6),
-              Text('النقاط: $score', style: const TextStyle(color: Color(0xFFFFF7D6))),
-            ]),
-          ),
-          const SizedBox(height: 18),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: options.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 14, childAspectRatio: 1.35),
-            itemBuilder: (BuildContext context, int index) => FilledButton.tonal(onPressed: () => _pick(options[index]), child: Text('${options[index]}', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900))),
-          ),
-        ],
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        child: Column(
+          children: <Widget>[
+            Container(
+              height: 150,
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(28), gradient: const LinearGradient(colors: <Color>[Color(0xFF7C3AED), Color(0xFF0EA5E9)])),
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+                const Icon(Icons.calculate_rounded, color: Colors.white, size: 38),
+                const SizedBox(height: 6),
+                Text('$a ${plus ? '+' : '-'} $b = ؟', style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 4),
+                Text('النقاط: $score', style: const TextStyle(color: Color(0xFFFFF7D6))),
+              ]),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: options.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 1.35),
+                itemBuilder: (BuildContext context, int index) => FilledButton.tonal(onPressed: () => _pick(options[index]), child: Text('${options[index]}', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900))),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
