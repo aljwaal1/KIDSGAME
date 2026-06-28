@@ -139,67 +139,68 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
   Widget build(BuildContext context) {
     return ConfettiOverlay(
       key: confettiKey,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-        children: [
-          GameHeader(title: 'إكس أو', subtitle: message, color: const Color(0xFF6D28D9), onReset: reset),
-          const SizedBox(height: 12),
-          Row(children: [
-            Expanded(child: ChoiceChip(label: const Text('ضد صديق'), selected: mode == TicTacMode.friend, onSelected: (_) => setMode(TicTacMode.friend))),
-            const SizedBox(width: 10),
-            Expanded(child: ChoiceChip(label: const Text('ضد الكمبيوتر'), selected: mode == TicTacMode.computer, onSelected: (_) => setMode(TicTacMode.computer))),
-          ]),
-          const SizedBox(height: 12),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-            _ScorePill(label: 'X', value: xWins, color: const Color(0xFF6D28D9)),
-            _ScorePill(label: mode == TicTacMode.computer ? '🤖' : 'O', value: oWins, color: const Color(0xFFF97316)),
-            _ScorePill(label: 'تعادل', value: draws, color: const Color(0xFF64748B)),
-          ]),
-          const SizedBox(height: 16),
-          AspectRatio(
-            aspectRatio: 1,
-            child: LayoutBuilder(builder: (context, constraints) {
-              final size = constraints.maxWidth;
-              return Stack(children: [
-                GridView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: 9,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 10, mainAxisSpacing: 10),
-                  itemBuilder: (context, index) {
-                    final value = board[index];
-                    return InkWell(
-                      borderRadius: BorderRadius.circular(24),
-                      onTap: () => play(index),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        decoration: BoxDecoration(
-                          color: value == 'X' ? const Color(0xFFEDE9FE) : value == 'O' ? const Color(0xFFFFEDD5) : Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: winLine.contains(index) ? const Color(0xFF10B981) : const Color(0xFFE9D5FF), width: winLine.contains(index) ? 4 : 2),
-                        ),
-                        child: Center(
-                          child: AnimatedScale(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.elasticOut,
-                            scale: value.isEmpty ? 0.0 : 1.0,
-                            child: Text(value, style: TextStyle(fontSize: 54, fontWeight: FontWeight.w900, color: value == 'X' ? const Color(0xFF6D28D9) : const Color(0xFFF97316))),
-                          ),
-                        ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+        child: Column(
+          children: <Widget>[
+            GameHeader(title: 'إكس أو', subtitle: message, color: const Color(0xFF6D28D9), onReset: reset),
+            const SizedBox(height: 8),
+            Row(children: <Widget>[
+              Expanded(child: ChoiceChip(label: const Text('ضد صديق'), selected: mode == TicTacMode.friend, onSelected: (_) => setMode(TicTacMode.friend))),
+              const SizedBox(width: 8),
+              Expanded(child: ChoiceChip(label: const Text('ضد الكمبيوتر'), selected: mode == TicTacMode.computer, onSelected: (_) => setMode(TicTacMode.computer))),
+            ]),
+            const SizedBox(height: 8),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: <Widget>[
+              _ScorePill(label: 'X', value: xWins, color: const Color(0xFF6D28D9)),
+              _ScorePill(label: mode == TicTacMode.computer ? '🤖' : 'O', value: oWins, color: const Color(0xFFF97316)),
+              _ScorePill(label: 'تعادل', value: draws, color: const Color(0xFF64748B)),
+            ]),
+            const SizedBox(height: 10),
+            Expanded(
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: LayoutBuilder(builder: (context, constraints) {
+                    final size = constraints.maxWidth;
+                    return Stack(children: <Widget>[
+                      GridView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: 9,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 10, mainAxisSpacing: 10),
+                        itemBuilder: (context, index) {
+                          final value = board[index];
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(24),
+                            onTap: () => play(index),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              decoration: BoxDecoration(
+                                color: value == 'X' ? const Color(0xFFEDE9FE) : value == 'O' ? const Color(0xFFFFEDD5) : Colors.white,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: winLine.contains(index) ? const Color(0xFF10B981) : const Color(0xFFE9D5FF), width: winLine.contains(index) ? 4 : 2),
+                              ),
+                              child: Center(
+                                child: AnimatedScale(
+                                  duration: const Duration(milliseconds: 220),
+                                  curve: Curves.elasticOut,
+                                  scale: value.isEmpty ? 0.0 : 1.0,
+                                  child: Text(value, style: TextStyle(fontSize: 54, fontWeight: FontWeight.w900, color: value == 'X' ? const Color(0xFF6D28D9) : const Color(0xFFF97316))),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
+                      if (winLine.isNotEmpty)
+                        IgnorePointer(child: AnimatedBuilder(animation: lineController, builder: (context, _) => CustomPaint(size: Size.square(size), painter: WinLinePainter(winLine, progress: lineController.value)))),
+                    ]);
+                  }),
                 ),
-                if (winLine.isNotEmpty)
-                  IgnorePointer(
-                    child: AnimatedBuilder(
-                      animation: lineController,
-                      builder: (context, _) => CustomPaint(size: Size.square(size), painter: WinLinePainter(winLine, progress: lineController.value)),
-                    ),
-                  ),
-              ]);
-            }),
-          ),
-        ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -213,12 +214,12 @@ class _ScorePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(color: color.withAlpha(25), borderRadius: BorderRadius.circular(14)),
-      child: Column(children: [
+      child: Column(children: <Widget>[
         Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w800)),
         const SizedBox(height: 2),
-        Text('$value', style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 16)),
+        Text('$value', style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 15)),
       ]),
     );
   }
