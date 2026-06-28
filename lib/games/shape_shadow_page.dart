@@ -57,44 +57,49 @@ class _ShapeShadowPageState extends State<ShapeShadowPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('ظل الشكل')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 100),
-        children: <Widget>[
-          _ShadowHeader(score: score),
-          const SizedBox(height: 18),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(22),
-              child: Column(children: <Widget>[
-                const Text('ابحث عن ظل هذا الشكل', style: TextStyle(fontFamily: 'Changa', fontSize: 21, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 18),
-                Icon(target.icon, color: target.color, size: 92),
-                const SizedBox(height: 8),
-                Text(target.name, style: const TextStyle(fontSize: 18, color: Color(0xFF64748B))),
-              ]),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        child: Column(
+          children: <Widget>[
+            _ShadowHeader(score: score),
+            const SizedBox(height: 10),
+            Card(
+              child: SizedBox(
+                height: 108,
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+                  Icon(target.icon, color: target.color, size: 70),
+                  const SizedBox(width: 18),
+                  Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+                    const Text('ابحث عن ظل الشكل', style: TextStyle(fontFamily: 'Changa', fontSize: 18, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 4),
+                    Text(target.name, style: const TextStyle(fontSize: 17, color: Color(0xFF64748B))),
+                  ]),
+                ]),
+              ),
             ),
-          ),
-          const SizedBox(height: 18),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: choices.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 14),
-            itemBuilder: (BuildContext context, int index) {
-              final item = choices[index];
-              return Card(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(24),
-                  onTap: () => _pick(item),
-                  child: Container(
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: const Color(0xFFF1F5F9)),
-                    child: Icon(item.icon, color: const Color(0xFF475569), size: 82),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
+            const SizedBox(height: 10),
+            Expanded(
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: choices.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10),
+                itemBuilder: (BuildContext context, int index) {
+                  final item = choices[index];
+                  return Card(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(24),
+                      onTap: () => _pick(item),
+                      child: Container(
+                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: const Color(0xFFF1F5F9)),
+                        child: Icon(item.icon, color: const Color(0xFF475569), size: 70),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -113,12 +118,13 @@ class _ShadowHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(26), gradient: const LinearGradient(colors: <Color>[Color(0xFF8B5CF6), Color(0xFFEC4899)])),
+      height: 88,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), gradient: const LinearGradient(colors: <Color>[Color(0xFF8B5CF6), Color(0xFFEC4899)])),
       child: Row(children: <Widget>[
-        const Icon(Icons.filter_vintage_rounded, color: Colors.white, size: 42),
-        const SizedBox(width: 14),
-        Expanded(child: Text('طابق الشكل مع ظله\nالنقاط: $score', style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 21, fontWeight: FontWeight.w900))),
+        const Icon(Icons.filter_vintage_rounded, color: Colors.white, size: 38),
+        const SizedBox(width: 12),
+        Expanded(child: Text('طابق الشكل مع ظله\nالنقاط: $score', style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 19, fontWeight: FontWeight.w900))),
       ]),
     );
   }
