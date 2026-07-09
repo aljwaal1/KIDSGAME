@@ -14,6 +14,7 @@ const List<List<int>> _winLines = <List<int>>[
 ];
 
 enum TicTacMode { friend, computer }
+enum _AiStrength { strong, medium, weak }
 
 class TicTacToePage extends StatefulWidget {
   const TicTacToePage({super.key});
@@ -32,6 +33,8 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
   int xWins = 0;
   int oWins = 0;
   int draws = 0;
+  int aiRound = 0;
+  _AiStrength aiStrength = _AiStrength.medium;
   final Random random = Random();
   final GlobalKey<ConfettiOverlayState> confettiKey = GlobalKey<ConfettiOverlayState>();
   late final AnimationController lineController = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
@@ -78,7 +81,9 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
       HapticFeedback.mediumImpact();
     } else {
       player = player == 'X' ? 'O' : 'X';
-      message = mode == TicTacMode.computer && player == 'O' ? 'دور الكمبيوتر...' : 'دور اللاعب $player';
+      message = mode == TicTacMode.computer && player == 'O'
+          ? 'دور الكمبيوتر... ${_aiStrengthText()}'
+          : 'دور اللاعب $player';
     }
   }
 
@@ -97,7 +102,26 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
     return null;
   }
 
-  int? _chooseAiMove() {
+  List<int> _emptyCells() => <int>[for (int i = 0; i < board.length; i++) if (board[i].isEmpty) i];
+
+  String _aiStrengthText() {
+    switch (aiStrength) {
+      case _AiStrength.strong:
+        return '🤖 قوي';
+      case _AiStrength.medium:
+        return '🤖 متوسط';
+      case _AiStrength.weak:
+        return '🤖 سهل';
+    }
+  }
+
+  void _prepareNextAiStrength() {
+    final List<_AiStrength> cycle = <_AiStrength>[_AiStrength.strong, _AiStrength.weak, _AiStrength.medium, _AiStrength.weak];
+    aiStrength = cycle[aiRound % cycle.length];
+    aiRound++;
+  }
+
+  int? _chooseStrongAiMove() {
     final win = _findWinningMove('O');
     if (win != null) return win;
     final block = _findWinningMove('X');
@@ -108,6 +132,37 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
     final edges = <int>[1, 3, 5, 7]..shuffle(random);
     for (final e in edges) { if (board[e].isEmpty) return e; }
     return null;
+  }
+
+  int? _chooseMediumAiMove() {
+    final win = _findWinningMove('O');
+    if (win != null) return win;
+    if (random.nextBool()) {
+      final block = _findWinningMove('X');
+      if (block != null) return block;
+    }
+    if (board[4].isEmpty && random.nextBool()) return 4;
+    final cells = _emptyCells()..shuffle(random);
+    return cells.isEmpty ? null : cells.first;
+  }
+
+  int? _chooseWeakAiMove() {
+    final cells = _emptyCells()..shuffle(random);
+    if (cells.isEmpty) return null;
+    final safeMistakes = cells.where((i) => _findWinningMove('O') != i).toList();
+    if (safeMistakes.isNotEmpty && random.nextInt(100) < 70) return safeMistakes.first;
+    return cells.first;
+  }
+
+  int? _chooseAiMove() {
+    switch (aiStrength) {
+      case _AiStrength.strong:
+        return _chooseStrongAiMove();
+      case _AiStrength.medium:
+        return _chooseMediumAiMove();
+      case _AiStrength.weak:
+        return _chooseWeakAiMove();
+    }
   }
 
   void _scheduleAiMove() {
@@ -125,7 +180,8 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
     setState(() {
       board = List<String>.filled(9, '');
       player = 'X';
-      message = mode == TicTacMode.computer ? 'دورك الآن، ابدأ اللعب' : 'دور اللاعب X';
+      if (mode == TicTacMode.computer) _prepareNextAiStrength();
+      message = mode == TicTacMode.computer ? 'دورك الآن، ابدأ اللعب ${_aiStrengthText()}' : 'دور اللاعب X';
       finished = false;
       aiThinking = false;
       winLine = <int>[];
