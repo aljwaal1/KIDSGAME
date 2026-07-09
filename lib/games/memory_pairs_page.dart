@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/score_service.dart';
 import '../services/sound_service.dart';
 
-enum _MemoryLevel { easy, medium, hard }
+enum _MemoryLevel { easy, medium, hard, expert }
 
 class MemoryPairsPage extends StatefulWidget {
   const MemoryPairsPage({super.key});
@@ -27,6 +27,18 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
     Icons.sports_soccer_rounded,
     Icons.rocket_launch_rounded,
     Icons.apple_rounded,
+    Icons.school_rounded,
+    Icons.music_note_rounded,
+    Icons.bolt_rounded,
+    Icons.ac_unit_rounded,
+    Icons.wb_sunny_rounded,
+    Icons.forest_rounded,
+    Icons.water_drop_rounded,
+    Icons.local_fire_department_rounded,
+    Icons.umbrella_rounded,
+    Icons.park_rounded,
+    Icons.toys_rounded,
+    Icons.sports_basketball_rounded,
   ];
 
   late List<_CardItem> cards;
@@ -45,24 +57,17 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
   int get _pairCount {
     switch (level) {
       case _MemoryLevel.easy:
-        return 6; // 12 cards
-      case _MemoryLevel.medium:
         return 8; // 16 cards
-      case _MemoryLevel.hard:
+      case _MemoryLevel.medium:
         return 12; // 24 cards
+      case _MemoryLevel.hard:
+        return 18; // 36 cards
+      case _MemoryLevel.expert:
+        return 24; // 48 cards
     }
   }
 
-  int get _columns {
-    switch (level) {
-      case _MemoryLevel.easy:
-        return 3;
-      case _MemoryLevel.medium:
-        return 4;
-      case _MemoryLevel.hard:
-        return 4;
-    }
-  }
+  int get _columns => 4;
 
   String get _levelName {
     switch (level) {
@@ -72,6 +77,21 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
         return 'متوسط';
       case _MemoryLevel.hard:
         return 'صعب';
+      case _MemoryLevel.expert:
+        return 'خبير';
+    }
+  }
+
+  double get _iconSize {
+    switch (level) {
+      case _MemoryLevel.easy:
+        return 42;
+      case _MemoryLevel.medium:
+        return 38;
+      case _MemoryLevel.hard:
+        return 34;
+      case _MemoryLevel.expert:
+        return 30;
     }
   }
 
@@ -120,7 +140,12 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
       });
       await SoundService.instance.play('pop.wav');
       if (matched == cards.length) {
-        final int stars = level == _MemoryLevel.hard ? 8 : level == _MemoryLevel.medium ? 6 : 4;
+        final int stars = switch (level) {
+          _MemoryLevel.easy => 4,
+          _MemoryLevel.medium => 6,
+          _MemoryLevel.hard => 8,
+          _MemoryLevel.expert => 12,
+        };
         await ScoreService.instance.addStars(stars);
         await SoundService.instance.play('win.wav');
       }
@@ -160,42 +185,45 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'تذكّر الصور المتشابهة\nالمستوى: $_levelName • الحركات: $moves',
+                    'تذكّر الصور المتشابهة\n$_levelName: ${cards.length} بطاقة • الحركات: $moves',
                     style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 18, fontWeight: FontWeight.w900),
                   ),
                 ),
               ]),
             ),
             const SizedBox(height: 10),
-            Row(children: <Widget>[
-              Expanded(child: ChoiceChip(label: const Text('سهل'), selected: level == _MemoryLevel.easy, onSelected: (_) => _setLevel(_MemoryLevel.easy))),
-              const SizedBox(width: 6),
-              Expanded(child: ChoiceChip(label: const Text('متوسط'), selected: level == _MemoryLevel.medium, onSelected: (_) => _setLevel(_MemoryLevel.medium))),
-              const SizedBox(width: 6),
-              Expanded(child: ChoiceChip(label: const Text('صعب'), selected: level == _MemoryLevel.hard, onSelected: (_) => _setLevel(_MemoryLevel.hard))),
-            ]),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              alignment: WrapAlignment.center,
+              children: <Widget>[
+                ChoiceChip(label: const Text('سهل 16'), selected: level == _MemoryLevel.easy, onSelected: (_) => _setLevel(_MemoryLevel.easy)),
+                ChoiceChip(label: const Text('متوسط 24'), selected: level == _MemoryLevel.medium, onSelected: (_) => _setLevel(_MemoryLevel.medium)),
+                ChoiceChip(label: const Text('صعب 36'), selected: level == _MemoryLevel.hard, onSelected: (_) => _setLevel(_MemoryLevel.hard)),
+                ChoiceChip(label: const Text('خبير 48'), selected: level == _MemoryLevel.expert, onSelected: (_) => _setLevel(_MemoryLevel.expert)),
+              ],
+            ),
             const SizedBox(height: 10),
             Expanded(
               child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
                 itemCount: cards.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: _columns,
                   mainAxisSpacing: 8,
                   crossAxisSpacing: 8,
-                  childAspectRatio: level == _MemoryLevel.hard ? .72 : .78,
+                  childAspectRatio: level == _MemoryLevel.expert ? .74 : .78,
                 ),
                 itemBuilder: (BuildContext context, int index) {
                   final _CardItem card = cards[index];
                   final bool visible = card.open || card.done;
                   return Card(
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(22),
+                      borderRadius: BorderRadius.circular(20),
                       onTap: () => _tap(index),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(22),
+                          borderRadius: BorderRadius.circular(20),
                           gradient: LinearGradient(
                             colors: visible
                                 ? <Color>[const Color(0xFFFFE4E6), const Color(0xFFEDE9FE)]
@@ -206,7 +234,7 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
                           child: Icon(
                             visible ? card.icon : Icons.question_mark_rounded,
                             color: visible ? const Color(0xFF7C3AED) : Colors.white,
-                            size: level == _MemoryLevel.hard ? 32 : 40,
+                            size: _iconSize,
                           ),
                         ),
                       ),
