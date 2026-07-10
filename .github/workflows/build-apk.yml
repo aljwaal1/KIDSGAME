@@ -1,9 +1,12 @@
-name: Build APK Direct
+name: Build Android 4.4 APK
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
+  push:
+    branches: [ android-4.4 ]
+    paths-ignore:
+      - 'apk/**'
+      - 'DOWNLOAD_APK.md'
 
 permissions:
   contents: write
@@ -12,8 +15,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Android 4.4 branch
         uses: actions/checkout@v4
+        with:
+          ref: android-4.4
+          fetch-depth: 0
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -29,44 +35,21 @@ jobs:
       - name: Prepare Android project
         run: |
           flutter create --platforms=android --org com.explapp --no-pub .
-          rm -f test/widget_test.dart
+          rm -rf test
+          flutter pub get
 
-      - name: Get packages
-        run: flutter pub get
-
-      - name: Set Android package and app name
+      - name: Configure Android app
         run: |
-          sed -i "s/applicationId = \"com.example.kids_games_arena\"/applicationId = \"com.explapp.kidsgame\"/" android/app/build.gradle || true
-          sed -i "s/applicationId \"com.example.kids_games_arena\"/applicationId \"com.explapp.kidsgame\"/" android/app/build.gradle || true
-          cat > android/app/src/main/AndroidManifest.xml <<'EOF'
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <application
-                  android:label="ملعب الأطفال"
-                  android:name="${applicationName}"
-                  android:icon="@mipmap/ic_launcher">
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true"
-                      android:launchMode="singleTop"
-                      android:theme="@style/LaunchTheme"
-                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-                      android:hardwareAccelerated="true"
-                      android:windowSoftInputMode="adjustResize">
-                      <meta-data
-                          android:name="io.flutter.embedding.android.NormalTheme"
-                          android:resource="@style/NormalTheme" />
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-                  <meta-data android:name="flutterEmbedding" android:value="2" />
-              </application>
-          </manifest>
-          EOF
+          sed -i 's/applicationId = ".*"/applicationId = "com.explapp.kidsgame.legacy"/' android/app/build.gradle.kts || true
+          sed -i 's/applicationId ".*"/applicationId "com.explapp.kidsgame.legacy"/' android/app/build.gradle || true
+          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 19/' android/app/build.gradle.kts || true
+          sed -i 's/minSdk = [0-9][0-9]*/minSdk = 19/' android/app/build.gradle.kts || true
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 19/' android/app/build.gradle || true
+          sed -i 's/minSdkVersion [0-9][0-9]*/minSdkVersion 19/' android/app/build.gradle || true
+          sed -i 's/android:label="[^"]*"/android:label="ملعب الأطفال 4.4"/' android/app/src/main/AndroidManifest.xml || true
 
       - name: Generate launcher icons
-        run: dart run flutter_launcher_icons
+        run: dart run flutter_launcher_icons || true
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
@@ -74,21 +57,22 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release --no-tree-shake-icons
 
-      - name: Copy APK
+      - name: Save independent APK
         run: |
           mkdir -p apk
-          cp build/app/outputs/flutter-apk/app-release.apk apk/kidsgame.apk
+          cp build/app/outputs/flutter-apk/app-release.apk apk/kidsgame-android-4.4.apk
           cat > DOWNLOAD_APK.md <<'EOF'
-          # KIDSGAME APK
+          # KIDSGAME — Android 4.4
 
-          APK:
-          https://github.com/aljwaal1/KIDSGAME/raw/main/apk/kidsgame.apk
+          APK مستقل لفرع Android 4.4:
+
+          https://github.com/aljwaal1/KIDSGAME/raw/android-4.4/apk/kidsgame-android-4.4.apk
           EOF
 
-      - name: Commit APK
+      - name: Commit APK to Android 4.4 branch
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add apk/kidsgame.apk DOWNLOAD_APK.md
-          git commit -m "Update APK" || echo "No changes"
-          git push || true
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apk/kidsgame-android-4.4.apk DOWNLOAD_APK.md
+          git commit -m "ci: update Android 4.4 APK" || echo "No changes"
+          git push origin HEAD:android-4.4
