@@ -1,4 +1,5 @@
-# KIDSGAME APK
+# KIDSGAME — Android 4.4
 
-APK:
-https://github.com/aljwaal1/KIDSGAME/raw/main/apk/kidsgame.apk
+APK مستقل لفرع Android 4.4:
+
+https://github.com/aljwaal1/KIDSGAME/raw/android-4.4/apk/kidsgame-android-4.4.apk
