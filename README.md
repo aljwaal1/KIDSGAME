@@ -54,3 +54,14 @@
 `apk/kids-games-arena.apk`
 
 لا يوجد Release ولا AAB. الأيقونة الجديدة تُولَّد تلقائيًا أثناء البناء عبر حزمة `flutter_launcher_icons`.
+
+
+## نسخة منفصلة للأجهزة القديمة
+
+يوجد مشروع Android Java خفيف ومستقل داخل `android_kitkat_java/` للأجهزة التي تعمل بنظام Android 4.4 فأحدث. لا يتم دمجه مع مشروع Flutter الحديث.
+
+- APK الحديث: `apk/kidsgame.apk`
+- APK القديم: `apk/kidsgame-kitkat.apk`
+- Workflow القديم: `Build KitKat APK Separate`
+
+النسخة القديمة تستخدم رسومات برمجية وأصوات Tone خفيفة لتقليل استهلاك الذاكرة والعمل دون إنترنت.
