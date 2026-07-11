@@ -1,0 +1,44 @@
+name: Build KitKat APK Separate
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'android_kitkat_java/**'
+      - '.github/workflows/build-kitkat-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kidsgame-kitkat-build
+  cancel-in-progress: true
+
+jobs:
+  build-kitkat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.2'
+      - name: Build legacy Android 4.4 APK
+        working-directory: android_kitkat_java
+        run: gradle --no-daemon assembleRelease
+      - name: Publish separate legacy APK
+        run: |
+          mkdir -p apk
+          cp android_kitkat_java/app/build/outputs/apk/release/app-release.apk apk/kidsgame-kitkat.apk
+      - name: Commit legacy APK only
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add apk/kidsgame-kitkat.apk
+          git commit -m "Update KitKat APK" || exit 0
+          git pull --rebase origin main
+          git push
