@@ -32,13 +32,13 @@ jobs:
         run: gradle --no-daemon assembleRelease
       - name: Publish separate legacy APK
         run: |
-          mkdir -p apk
-          cp android_kitkat_java/app/build/outputs/apk/release/app-release.apk apk/kidsgame-kitkat.apk
+          mkdir -p apk/legacy
+          cp android_kitkat_java/app/build/outputs/apk/release/app-release.apk apk/legacy/kidsgame-kitkat.apk
       - name: Commit legacy APK only
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add apk/kidsgame-kitkat.apk
+          git add apk/legacy/kidsgame-kitkat.apk
           git commit -m "Update KitKat APK" || exit 0
           git pull --rebase origin main
           git push
