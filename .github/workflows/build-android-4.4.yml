@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: kidsgame-android-4-4
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,7 +33,9 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Android SDK 33
-        run: sdkmanager 'platforms;android-33' 'build-tools;33.0.2'
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-33' 'build-tools;33.0.2'
 
       - name: Set up Gradle 7.6.4
         uses: gradle/actions/setup-gradle@v4
@@ -41,6 +47,7 @@ jobs:
 
       - name: Copy APK
         run: |
+          test -f legacy-android-4.4/app/build/outputs/apk/release/app-release.apk
           mkdir -p apk
           cp legacy-android-4.4/app/build/outputs/apk/release/app-release.apk apk/kidsgame-android-4.4.apk
 
@@ -57,5 +64,5 @@ jobs:
           git add apk/kidsgame-android-4.4.apk
           if ! git diff --cached --quiet; then
             git commit -m 'Build Kids Game Android 4.4 APK'
-            git push origin android-4.4
+            git push origin HEAD:android-4.4
           fi
