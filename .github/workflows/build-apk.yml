@@ -3,10 +3,19 @@ name: Build APK Direct
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'lib/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/build-apk.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: kidsgame-modern-flutter
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -76,19 +85,19 @@ jobs:
 
       - name: Copy APK
         run: |
-          mkdir -p apk
-          cp build/app/outputs/flutter-apk/app-release.apk apk/kidsgame.apk
+          mkdir -p apk/modern
+          cp build/app/outputs/flutter-apk/app-release.apk apk/modern/kidsgame.apk
           cat > DOWNLOAD_APK.md <<'EOF'
           # KIDSGAME APK
 
           APK:
-          https://github.com/aljwaal1/KIDSGAME/raw/main/apk/kidsgame.apk
+          https://github.com/aljwaal1/KIDSGAME/raw/main/apk/modern/kidsgame.apk
           EOF
 
       - name: Commit APK
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add apk/kidsgame.apk DOWNLOAD_APK.md
+          git add apk/modern/kidsgame.apk DOWNLOAD_APK.md
           git commit -m "Update APK" || echo "No changes"
           git push || true
