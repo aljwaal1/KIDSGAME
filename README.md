@@ -60,8 +60,16 @@
 
 يوجد مشروع Android Java خفيف ومستقل داخل `android_kitkat_java/` للأجهزة التي تعمل بنظام Android 4.4 فأحدث. لا يتم دمجه مع مشروع Flutter الحديث.
 
-- APK الحديث: `apk/kidsgame.apk`
-- APK القديم: `apk/kidsgame-kitkat.apk`
+- APK الحديث: `apk/modern/kidsgame.apk`
+- APK القديم: `apk/legacy/kidsgame-kitkat.apk`
 - Workflow القديم: `Build KitKat APK Separate`
 
 النسخة القديمة تستخدم رسومات برمجية وأصوات Tone خفيفة لتقليل استهلاك الذاكرة والعمل دون إنترنت.
+
+### ضمان عدم التداخل
+
+- مشروع Flutter الحديث لا يقرأ أو يبني ملفات `android_kitkat_java/`.
+- مشروع KitKat مستقل باسم حزمة `com.explapp.kidsgame.legacy` ولا يستخدم مكتبات Flutter.
+- تعديل ملفات النسخة الحديثة يشغّل Workflow الحديث فقط.
+- تعديل ملفات النسخة القديمة يشغّل Workflow القديم فقط.
+- كل APK محفوظ في مجلد مستقل، ويمكن تثبيت النسختين معاً دون استبدال إحداهما بالأخرى.
