@@ -1,42 +1,10 @@
 package com.explapp.kidsgamelegacy;
-
-import android.app.Activity;
-import android.os.Bundle;
-import android.webkit.WebChromeClient;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
-
-public class MainActivity extends Activity {
-    private WebView webView;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        webView = new WebView(this);
-        setContentView(webView);
-
-        WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
-        settings.setAllowFileAccess(true);
-        settings.setLoadWithOverviewMode(true);
-        settings.setUseWideViewPort(true);
-        settings.setBuiltInZoomControls(false);
-        settings.setDisplayZoomControls(false);
-
-        webView.setWebViewClient(new WebViewClient());
-        webView.setWebChromeClient(new WebChromeClient());
-        webView.loadUrl("https://aljwaal1.github.io/KIDSGAME/");
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
-    }
+import android.app.*;import android.os.*;import android.graphics.Color;import android.view.*;import android.widget.*;import java.util.*;
+public class MainActivity extends Activity{
+ LinearLayout box; TextView score,q; int points=0; Random r=new Random(); String answer;
+ public void onCreate(Bundle b){super.onCreate(b);home();}
+ TextView t(String s,int z){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setGravity(17);v.setPadding(12,16,12,16);return v;}
+ Button btn(String s){Button b=new Button(this);b.setText(s);b.setTextSize(19);b.setAllCaps(false);return b;}
+ void home(){ScrollView sc=new ScrollView(this);box=new LinearLayout(this);box.setOrientation(1);box.setPadding(22,28,22,28);box.setBackgroundColor(Color.rgb(255,248,225));sc.addView(box);box.addView(t("🌟 ملعب الأطفال 🌟",30));box.addView(t("لعبة الألوان تعمل دون إنترنت",18));score=t("النجوم: "+points,18);box.addView(score);q=t("",27);box.addView(q);next();setContentView(sc);}
+ void next(){String[] n={"أحمر","أزرق","أخضر","أصفر"};int[] c={Color.RED,Color.BLUE,Color.rgb(40,160,70),Color.rgb(255,190,0)};int x=r.nextInt(4);answer=n[x];q.setText("ما لون هذه الدائرة؟\n●");q.setTextColor(c[x]);for(int i=0;i<4;i++){final String a=n[i];Button b=btn(a);b.setOnClickListener(new View.OnClickListener(){public void onClick(View v){if(a.equals(answer)){points++;Toast.makeText(MainActivity.this,"أحسنت! نجمة جديدة",0).show();}else Toast.makeText(MainActivity.this,"حاول مرة أخرى",0).show();home();}});box.addView(b);}}
 }
