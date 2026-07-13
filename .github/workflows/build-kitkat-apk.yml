@@ -55,7 +55,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add apk/legacy/kidsgame-kitkat.apk apk/legacy/kidsgame-kitkat-build-failure.log
+          git add -A apk/legacy
           git diff --cached --quiet || git commit -m "Build KitKat APK with interaction sounds"
           git pull --rebase origin legacy-android-4.4
           git push origin HEAD:legacy-android-4.4
