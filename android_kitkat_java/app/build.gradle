@@ -3,11 +3,19 @@ plugins { id 'com.android.application' }
 android {
     namespace 'com.explapp.kidsgame.legacy'
     compileSdk 34
+
     defaultConfig {
         applicationId 'com.explapp.kidsgame.legacy'
         minSdk 19
         targetSdk 28
         versionCode 1
-        versionName '1.0-legacy'
+        versionName '1.0-legacy-sounds'
+    }
+
+    lint {
+        // This APK is intentionally distributed for Android 4.4 devices.
+        // Keep the legacy target behavior and ignore only the Play target warning.
+        disable 'ExpiredTargetSdkVersion'
+        abortOnError true
     }
 }
