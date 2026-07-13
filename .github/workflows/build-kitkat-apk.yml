@@ -22,6 +22,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: legacy-android-4.4
+          fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -30,8 +31,11 @@ jobs:
         with:
           gradle-version: '8.2'
       - name: Build legacy Android 4.4 APK
+        shell: bash
         working-directory: android_kitkat_java
-        run: gradle --no-daemon clean assembleRelease
+        run: |
+          set -o pipefail
+          gradle --no-daemon clean assembleRelease --stacktrace 2>&1 | tee ../kidsgame-kitkat-build.log
       - name: Publish separate legacy APK
         run: |
           set -euo pipefail
@@ -40,15 +44,29 @@ jobs:
           unzip -t "$APK" >/dev/null
           mkdir -p apk/legacy
           cp "$APK" apk/legacy/kidsgame-kitkat.apk
+          rm -f apk/legacy/kidsgame-kitkat-build-failure.log
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: kidsgame-kitkat-android-4.4
           path: apk/legacy/kidsgame-kitkat.apk
       - name: Commit legacy APK only
+        if: success()
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add apk/legacy/kidsgame-kitkat.apk
+          git add apk/legacy/kidsgame-kitkat.apk apk/legacy/kidsgame-kitkat-build-failure.log
           git diff --cached --quiet || git commit -m "Build KitKat APK with interaction sounds"
+          git pull --rebase origin legacy-android-4.4
+          git push origin HEAD:legacy-android-4.4
+      - name: Preserve build failure log
+        if: failure()
+        run: |
+          mkdir -p apk/legacy
+          cp kidsgame-kitkat-build.log apk/legacy/kidsgame-kitkat-build-failure.log
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add apk/legacy/kidsgame-kitkat-build-failure.log
+          git diff --cached --quiet || git commit -m "Record KitKat build failure"
           git pull --rebase origin legacy-android-4.4
           git push origin HEAD:legacy-android-4.4
