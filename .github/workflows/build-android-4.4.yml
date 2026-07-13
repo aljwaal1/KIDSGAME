@@ -34,6 +34,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '7.6.4'
+      - name: Run game logic tests
+        run: gradle -p legacy-android-4.4 testDebugUnitTest --stacktrace --no-daemon
       - name: Build signed debug APK
         run: |
           set -o pipefail
