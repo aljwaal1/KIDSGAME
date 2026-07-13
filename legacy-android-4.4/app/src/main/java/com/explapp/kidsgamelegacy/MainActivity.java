@@ -33,7 +33,7 @@ import java.util.Random;
 
 /**
  * Native, lightweight Kids Games Arena for Android 4.4.
- * Keeps the original three games: letter bubbles, tic-tac-toe and sliding puzzle.
+ * Six complete games drawn in native code with no web or heavy image dependencies.
  */
 public final class MainActivity extends Activity {
     private static final String PREFS = "kids_arena_legacy_v3";
@@ -51,6 +51,7 @@ public final class MainActivity extends Activity {
     private ToneGenerator tones;
     private boolean soundOn = true;
     private boolean home = true;
+    private int currentGame;
     private int stars;
     private int rounds;
     private int best;
@@ -63,6 +64,20 @@ public final class MainActivity extends Activity {
 
     private final int[] puzzle = new int[9];
     private int puzzleMoves;
+
+    private int mathAnswer;
+    private String mathQuestion;
+    private final int[] mathOptions = new int[4];
+
+    private final int[] memory = new int[12];
+    private final boolean[] memoryOpen = new boolean[12];
+    private final boolean[] memoryMatched = new boolean[12];
+    private int memoryFirst = -1;
+    private boolean memoryLocked;
+
+    private int oddIndex;
+    private int oddBase;
+    private int oddDifferent;
 
     private BubbleView bubbleView;
 
@@ -88,6 +103,7 @@ public final class MainActivity extends Activity {
     private void showHome() {
         stopBubbleGame();
         home = true;
+        currentGame = 0;
         LinearLayout root = page();
         root.addView(new HeroView(this), new LinearLayout.LayoutParams(-1, dp(154)));
 
@@ -95,7 +111,7 @@ public final class MainActivity extends Activity {
         title.setGravity(Gravity.CENTER);
         root.addView(title, top(7));
 
-        TextView subtitle = label("ثلاث ألعاب ممتعة للتفكير والتعلّم", 15, MUTED, false);
+        TextView subtitle = label("ست ألعاب ممتعة للتفكير والذاكرة والتعلّم", 15, MUTED, false);
         subtitle.setGravity(Gravity.CENTER);
         root.addView(subtitle, top(2));
 
@@ -114,6 +130,12 @@ public final class MainActivity extends Activity {
                 new View.OnClickListener() { @Override public void onClick(View v) { startXo(); } }), top(9));
         root.addView(gameCard("البزل المنزلق", "رتّب الأرقام من 1 إلى 8 بأقل حركات", TEAL, "1 2",
                 new View.OnClickListener() { @Override public void onClick(View v) { startPuzzle(); } }), top(9));
+        root.addView(gameCard("الحساب السريع", "اختر جواب المسألة من أربع إجابات", ORANGE, "+ =",
+                new View.OnClickListener() { @Override public void onClick(View v) { startMath(); } }), top(9));
+        root.addView(gameCard("ذاكرة الصور", "اكشف الأزواج المتشابهة بأقل محاولات", 0xff2b87d1, "◆ ●",
+                new View.OnClickListener() { @Override public void onClick(View v) { startMemory(); } }), top(9));
+        root.addView(gameCard("اكتشف المختلف", "دقق في الأشكال واختر الشكل المختلف", 0xff8e63d9, "○ △",
+                new View.OnClickListener() { @Override public void onClick(View v) { startOdd(); } }), top(9));
 
         LinearLayout controls = row();
         TextView sound = action(soundOn ? "الصوت: يعمل" : "الصوت: متوقف", soundOn ? TEAL : MUTED);
@@ -139,6 +161,7 @@ public final class MainActivity extends Activity {
 
     private void startBubbles() {
         home = false;
+        currentGame = 1;
         stopBubbleGame();
         LinearLayout root = gameShell("فقاعات الحروف", "المس الفقاعة التي تحمل الحرف المطلوب", PINK);
         bubbleView = new BubbleView(this);
@@ -149,6 +172,7 @@ public final class MainActivity extends Activity {
 
     private void startXo() {
         stopBubbleGame();
+        currentGame = 2;
         Arrays.fill(xo, "");
         xoTurn = "X";
         xoFinished = false;
@@ -205,6 +229,7 @@ public final class MainActivity extends Activity {
 
     private void startPuzzle() {
         stopBubbleGame();
+        currentGame = 3;
         for (int i = 0; i < 9; i++) puzzle[i] = (i + 1) % 9;
         int blank = 8;
         int previous = -1;
@@ -274,6 +299,139 @@ public final class MainActivity extends Activity {
         return puzzle[8] == 0;
     }
 
+    private void startMath() {
+        stopBubbleGame();
+        home = false;
+        currentGame = 4;
+        int a = 2 + random.nextInt(18), b = 1 + random.nextInt(12);
+        boolean subtract = random.nextBoolean();
+        if (subtract && b > a) { int swap = a; a = b; b = swap; }
+        mathAnswer = subtract ? a - b : a + b;
+        mathQuestion = a + (subtract ? "  −  " : "  +  ") + b + "  =  ؟";
+        ArrayList<Integer> choices = new ArrayList<Integer>();
+        choices.add(mathAnswer);
+        while (choices.size() < 4) {
+            int candidate = Math.max(0, mathAnswer + random.nextInt(11) - 5);
+            if (!choices.contains(candidate)) choices.add(candidate);
+        }
+        Collections.shuffle(choices);
+        for (int i = 0; i < 4; i++) mathOptions[i] = choices.get(i);
+        showMath();
+    }
+
+    private void showMath() {
+        home = false;
+        currentGame = 4;
+        LinearLayout root = gameShell("الحساب السريع", "فكر بهدوء ثم اختر الجواب الصحيح", ORANGE);
+        TextView question = label(mathQuestion, 37, DARK, true);
+        question.setGravity(Gravity.CENTER);
+        question.setPadding(dp(8), dp(30), dp(8), dp(30));
+        question.setBackground(cardBackground(Color.WHITE, 22, 0xffffd3b5));
+        root.addView(question, top(10));
+        for (int rowIndex = 0; rowIndex < 2; rowIndex++) {
+            LinearLayout answers = row();
+            for (int column = 0; column < 2; column++) {
+                final int value = mathOptions[rowIndex * 2 + column];
+                TextView answer = primary(String.valueOf(value), rowIndex == 0 ? ORANGE : 0xffe36a7e);
+                answer.setTextSize(24);
+                answer.setContentDescription("الإجابة " + value);
+                answer.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+                    if (value == mathAnswer) { win(3, "إجابة صحيحة"); startMath(); }
+                    else { miss(); v.animate().translationX(dp(6)).setDuration(70).withEndAction(new Runnable() { @Override public void run() { v.animate().translationX(0).setDuration(70).start(); } }).start(); }
+                }});
+                answers.addView(answer, weight());
+                if (column == 0) answers.addView(space(8));
+            }
+            root.addView(answers, top(8));
+        }
+        setPage(root, false);
+    }
+
+    private void startMemory() {
+        stopBubbleGame();
+        home = false;
+        currentGame = 5;
+        ArrayList<Integer> values = new ArrayList<Integer>();
+        for (int i = 0; i < 6; i++) { values.add(i); values.add(i); }
+        Collections.shuffle(values);
+        for (int i = 0; i < 12; i++) { memory[i] = values.get(i); memoryOpen[i] = false; memoryMatched[i] = false; }
+        memoryFirst = -1;
+        memoryLocked = false;
+        showMemory();
+    }
+
+    private void showMemory() {
+        home = false;
+        currentGame = 5;
+        int found = 0; for (boolean value : memoryMatched) if (value) found++;
+        LinearLayout root = gameShell("ذاكرة الصور", "الأزواج المكتشفة: " + (found / 2) + " من 6", 0xff2b87d1);
+        root.addView(new MemoryBoard(this), new LinearLayout.LayoutParams(-1, dp(390)));
+        TextView restart = primary("خلط بطاقات جديدة", 0xff2b87d1);
+        restart.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { playTap(); startMemory(); } });
+        root.addView(restart, top(8));
+        setPage(root, false);
+    }
+
+    private void memoryTap(final int index) {
+        if (memoryLocked || memoryMatched[index] || memoryOpen[index]) return;
+        memoryOpen[index] = true;
+        playTap();
+        if (memoryFirst < 0) { memoryFirst = index; showMemory(); return; }
+        final int previous = memoryFirst;
+        if (memory[previous] == memory[index]) {
+            memoryMatched[previous] = memoryMatched[index] = true;
+            memoryFirst = -1;
+            boolean complete = true; for (boolean value : memoryMatched) if (!value) complete = false;
+            if (complete) {
+                win(8, "اكتشفت كل الأزواج");
+                showMemory();
+                handler.postDelayed(new Runnable() { @Override public void run() { if (currentGame == 5) startMemory(); } }, 850);
+            } else { playSuccess(); showMemory(); }
+        } else {
+            memoryLocked = true;
+            showMemory();
+            handler.postDelayed(new Runnable() { @Override public void run() {
+                memoryOpen[previous] = memoryOpen[index] = false; memoryFirst = -1; memoryLocked = false;
+                if (currentGame == 5) showMemory();
+            } }, 650);
+        }
+    }
+
+    private void startOdd() {
+        stopBubbleGame();
+        home = false;
+        currentGame = 6;
+        oddIndex = random.nextInt(6);
+        oddBase = random.nextInt(5);
+        do { oddDifferent = random.nextInt(5); } while (oddDifferent == oddBase);
+        showOdd();
+    }
+
+    private void showOdd() {
+        home = false;
+        currentGame = 6;
+        LinearLayout root = gameShell("اكتشف المختلف", "خمسة أشكال متشابهة وواحد مختلف", 0xff8e63d9);
+        for (int rowIndex = 0; rowIndex < 2; rowIndex++) {
+            LinearLayout shapes = row();
+            for (int column = 0; column < 3; column++) {
+                final int index = rowIndex * 3 + column;
+                ShapeTile tile = new ShapeTile(this, index == oddIndex ? oddDifferent : oddBase, index);
+                tile.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+                    if (index == oddIndex) { win(4, "عين ثاقبة! وجدت المختلف"); startOdd(); }
+                    else miss();
+                }});
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(126), 1f);
+                params.setMargins(dp(4), dp(4), dp(4), dp(4));
+                shapes.addView(tile, params);
+            }
+            root.addView(shapes, top(5));
+        }
+        TextView next = primary("أشكال جديدة", 0xff8e63d9);
+        next.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { playTap(); startOdd(); } });
+        root.addView(next, top(8));
+        setPage(root, false);
+    }
+
     private LinearLayout gameShell(String title, String subtitle, int color) {
         LinearLayout root = page();
         LinearLayout nav = row();
@@ -287,7 +445,7 @@ public final class MainActivity extends Activity {
                 soundOn = !soundOn;
                 prefs.edit().putBoolean("sound", soundOn).apply();
                 if (soundOn) playTap();
-                if (bubbleView != null) startBubbles(); else if (title.indexOf("إكس") >= 0) showXo(); else showPuzzle();
+                refreshCurrentGame();
             }
         });
         nav.addView(back, weight());
@@ -307,6 +465,16 @@ public final class MainActivity extends Activity {
         score.setBackground(round(0xffffffff, 30));
         root.addView(score, top(8));
         return root;
+    }
+
+    private void refreshCurrentGame() {
+        if (currentGame == 1) startBubbles();
+        else if (currentGame == 2) showXo();
+        else if (currentGame == 3) showPuzzle();
+        else if (currentGame == 4) showMath();
+        else if (currentGame == 5) showMemory();
+        else if (currentGame == 6) showOdd();
+        else showHome();
     }
 
     private void stopBubbleGame() {
@@ -375,17 +543,14 @@ public final class MainActivity extends Activity {
 
     private void setPage(LinearLayout root, boolean scrollable) {
         root.setAlpha(0f);
-        if (scrollable) {
-            ScrollView scroll = new ScrollView(this);
-            scroll.setFillViewport(true);
-            scroll.setBackgroundColor(BG);
-            scroll.addView(root);
-            setContentView(scroll);
-        } else {
-            root.setBackgroundColor(BG);
-            setContentView(root);
-        }
-        root.animate().alpha(1f).setDuration(190).start();
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(BG);
+        scroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
+        scroll.addView(root);
+        setContentView(scroll);
+        root.setTranslationY(dp(6));
+        root.animate().alpha(1f).translationY(0).setDuration(190).start();
     }
 
     private LinearLayout gameCard(String title, String subtitle, int color, String symbol, View.OnClickListener listener) {
@@ -629,6 +794,67 @@ public final class MainActivity extends Activity {
             int row=Math.min(2,(int)((event.getY()-top)/(size/3f)));
             puzzleTap(row*3+col);
             return true;
+        }
+    }
+
+    private final class MemoryBoard extends View {
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path shape = new Path();
+        MemoryBoard(Activity context) { super(context); setContentDescription("لوحة ذاكرة من اثنتي عشرة بطاقة"); }
+
+        @Override protected void onDraw(Canvas c) {
+            float gap = dp(7), cellW = (getWidth() - gap * 4) / 3f, cellH = (getHeight() - gap * 5) / 4f;
+            for (int i = 0; i < 12; i++) {
+                float left = gap + (i % 3) * (cellW + gap), top = gap + (i / 3) * (cellH + gap);
+                RectF card = new RectF(left, top, left + cellW, top + cellH);
+                p.setColor(memoryMatched[i] ? 0xffdff8ef : memoryOpen[i] ? Color.WHITE : PURPLE);
+                c.drawRoundRect(card, dp(17), dp(17), p);
+                if (memoryOpen[i] || memoryMatched[i]) drawMemorySymbol(c, memory[i], card.centerX(), card.centerY(), Math.min(cellW, cellH) * .29f);
+                else {
+                    p.setColor(0x55ffffff); c.drawCircle(card.centerX(), card.centerY(), Math.min(cellW, cellH) * .24f, p);
+                    p.setColor(Color.WHITE); p.setTextAlign(Paint.Align.CENTER); p.setTypeface(Typeface.DEFAULT_BOLD); p.setTextSize(dp(26));
+                    Paint.FontMetrics fm = p.getFontMetrics(); c.drawText("؟", card.centerX(), card.centerY() - (fm.ascent + fm.descent) / 2f, p);
+                }
+            }
+        }
+
+        private void drawMemorySymbol(Canvas c, int value, float x, float y, float r) {
+            int[] colors = {PINK, TEAL, ORANGE, 0xff2b87d1, 0xff8e63d9, 0xffffb51f};
+            p.setColor(colors[value]); p.setStyle(Paint.Style.FILL); shape.reset();
+            if (value == 0) c.drawCircle(x, y, r, p);
+            else if (value == 1) c.drawRoundRect(new RectF(x-r,y-r,x+r,y+r),r*.23f,r*.23f,p);
+            else if (value == 2) { shape.moveTo(x,y-r);shape.lineTo(x+r,y+r);shape.lineTo(x-r,y+r);shape.close();c.drawPath(shape,p); }
+            else if (value == 3) { for(int i=0;i<10;i++){double a=-Math.PI/2+i*Math.PI/5;float rr=i%2==0?r:r*.44f,px=x+(float)Math.cos(a)*rr,py=y+(float)Math.sin(a)*rr;if(i==0)shape.moveTo(px,py);else shape.lineTo(px,py);}shape.close();c.drawPath(shape,p); }
+            else if (value == 4) { shape.moveTo(x,y+r);shape.cubicTo(x-r*1.35f,y,x-r*.75f,y-r*.9f,x,y-r*.25f);shape.cubicTo(x+r*.75f,y-r*.9f,x+r*1.35f,y,x,y+r);shape.close();c.drawPath(shape,p); }
+            else { c.drawOval(new RectF(x-r*.62f,y-r,x+r*.62f,y+r),p);p.setColor(Color.WHITE);c.drawCircle(x-r*.22f,y-r*.15f,r*.10f,p);c.drawCircle(x+r*.22f,y-r*.15f,r*.10f,p); }
+        }
+
+        @Override public boolean onTouchEvent(MotionEvent event) {
+            if (event.getAction() != MotionEvent.ACTION_UP) return true;
+            float gap=dp(7),cellW=(getWidth()-gap*4)/3f,cellH=(getHeight()-gap*5)/4f;
+            if(event.getX()<gap||event.getY()<gap)return true;
+            int col=(int)((event.getX()-gap)/(cellW+gap)),row=(int)((event.getY()-gap)/(cellH+gap));
+            if(col<0||col>2||row<0||row>3)return true;
+            float localX=(event.getX()-gap)%(cellW+gap),localY=(event.getY()-gap)%(cellH+gap);
+            if(localX>cellW||localY>cellH)return true;
+            memoryTap(row*3+col);return true;
+        }
+    }
+
+    private final class ShapeTile extends View {
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path path = new Path();
+        private final int shapeType;
+        ShapeTile(Activity context, int shapeType, int index) { super(context); this.shapeType=shapeType; setContentDescription("الشكل رقم "+(index+1)); }
+        @Override protected void onDraw(Canvas c) {
+            float w=getWidth(),h=getHeight(),x=w/2f,y=h/2f,r=Math.min(w,h)*.27f;
+            p.setColor(Color.WHITE);c.drawRoundRect(new RectF(0,0,w,h),dp(17),dp(17),p);
+            p.setColor(shapeType==0?PINK:shapeType==1?TEAL:shapeType==2?ORANGE:shapeType==3?0xff2b87d1:0xff8e63d9);path.reset();
+            if(shapeType==0)c.drawCircle(x,y,r,p);
+            else if(shapeType==1)c.drawRoundRect(new RectF(x-r,y-r,x+r,y+r),r*.2f,r*.2f,p);
+            else if(shapeType==2){path.moveTo(x,y-r);path.lineTo(x+r,y+r);path.lineTo(x-r,y+r);path.close();c.drawPath(path,p);}
+            else if(shapeType==3){for(int i=0;i<10;i++){double a=-Math.PI/2+i*Math.PI/5;float rr=i%2==0?r:r*.44f,px=x+(float)Math.cos(a)*rr,py=y+(float)Math.sin(a)*rr;if(i==0)path.moveTo(px,py);else path.lineTo(px,py);}path.close();c.drawPath(path,p);}
+            else{p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(r*.38f);c.drawCircle(x,y,r*.72f,p);p.setStyle(Paint.Style.FILL);}
         }
     }
 
