@@ -35,13 +35,16 @@ jobs:
         working-directory: android_kitkat_java
         run: |
           set -o pipefail
-          gradle --no-daemon clean assembleRelease --stacktrace 2>&1 | tee ../kidsgame-kitkat-build.log
+          gradle --no-daemon clean assembleDebug --stacktrace 2>&1 | tee ../kidsgame-kitkat-build.log
       - name: Publish separate legacy APK
         run: |
           set -euo pipefail
-          APK="android_kitkat_java/app/build/outputs/apk/release/app-release.apk"
+          APK="android_kitkat_java/app/build/outputs/apk/debug/app-debug.apk"
           test -s "$APK"
           unzip -t "$APK" >/dev/null
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
           mkdir -p apk/legacy
           cp "$APK" apk/legacy/kidsgame-kitkat.apk
           rm -f apk/legacy/kidsgame-kitkat-build-failure.log
