@@ -17,6 +17,7 @@ final class InteractionSound {
     static final int DRAW = 8;
     static final int RESTART = 9;
 
+    private static final int GAME_VOLUME = 88;
     private final SharedPreferences preferences;
     private ToneGenerator tones;
     private boolean enabled;
@@ -25,7 +26,7 @@ final class InteractionSound {
     InteractionSound(Context context) {
         preferences = context.getSharedPreferences("legacy_sound", Context.MODE_PRIVATE);
         enabled = preferences.getBoolean("enabled", true);
-        tones = new ToneGenerator(AudioManager.STREAM_MUSIC, 82);
+        tones = new ToneGenerator(AudioManager.STREAM_MUSIC, GAME_VOLUME);
     }
 
     boolean isEnabled() { return enabled; }
