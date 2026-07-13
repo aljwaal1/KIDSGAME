@@ -2,8 +2,6 @@
     <style name="AppTheme" parent="@android:style/Theme.Holo.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:colorAccent">#5B3FC4</item>
         <item name="android:windowBackground">#F7F5FF</item>
-        <item name="android:navigationBarColor">#241A52</item>
     </style>
 </resources>
