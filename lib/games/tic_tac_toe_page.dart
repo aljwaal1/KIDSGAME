@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/score_service.dart';
@@ -38,10 +40,12 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
   final Random random = Random();
   final GlobalKey<ConfettiOverlayState> confettiKey = GlobalKey<ConfettiOverlayState>();
   late final AnimationController lineController = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
+  Timer? _aiTimer;
 
   void setMode(TicTacMode value) {
     if (mode == value) return;
     SoundService.instance.play('click.wav');
+    _aiTimer?.cancel();
     setState(() => mode = value);
     reset();
   }
@@ -53,6 +57,7 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
   }
 
   void _place(int index) {
+    if (index < 0 || index >= board.length || board[index].isNotEmpty || finished) return;
     SoundService.instance.play('tap.wav');
     setState(() {
       board[index] = player;
@@ -67,6 +72,8 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
       winLine = winner;
       final symbol = board[winner.first];
       finished = true;
+      aiThinking = false;
+      _aiTimer?.cancel();
       if (symbol == 'X') { xWins++; message = 'فاز اللاعب X 🎉'; }
       else { oWins++; message = mode == TicTacMode.computer ? 'فاز الكمبيوتر 🤖' : 'فاز اللاعب O 🎉'; }
       HapticFeedback.heavyImpact();
@@ -77,6 +84,8 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
     } else if (!board.contains('')) {
       message = 'تعادل';
       finished = true;
+      aiThinking = false;
+      _aiTimer?.cancel();
       draws++;
       HapticFeedback.mediumImpact();
     } else {
@@ -149,7 +158,8 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
   int? _chooseWeakAiMove() {
     final cells = _emptyCells()..shuffle(random);
     if (cells.isEmpty) return null;
-    final safeMistakes = cells.where((i) => _findWinningMove('O') != i).toList();
+    final winningMove = _findWinningMove('O');
+    final safeMistakes = cells.where((i) => winningMove != i).toList();
     if (safeMistakes.isNotEmpty && random.nextInt(100) < 70) return safeMistakes.first;
     return cells.first;
   }
@@ -166,17 +176,25 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
   }
 
   void _scheduleAiMove() {
+    _aiTimer?.cancel();
     setState(() => aiThinking = true);
-    Future<void>.delayed(const Duration(milliseconds: 550), () {
+    _aiTimer = Timer(const Duration(milliseconds: 550), () {
       if (!mounted) return;
-      if (finished) { setState(() => aiThinking = false); return; }
+      if (finished || mode != TicTacMode.computer || player != 'O') {
+        setState(() => aiThinking = false);
+        return;
+      }
       final move = _chooseAiMove();
       setState(() => aiThinking = false);
-      if (move != null) _place(move);
+      if (move != null && board[move].isEmpty && mode == TicTacMode.computer && player == 'O') {
+        _place(move);
+      }
     });
   }
 
   void reset() {
+    _aiTimer?.cancel();
+    lineController.reset();
     setState(() {
       board = List<String>.filled(9, '');
       player = 'X';
@@ -189,7 +207,11 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
   }
 
   @override
-  void dispose() { lineController.dispose(); super.dispose(); }
+  void dispose() {
+    _aiTimer?.cancel();
+    lineController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
