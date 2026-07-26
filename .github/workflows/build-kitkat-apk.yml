@@ -44,20 +44,27 @@ jobs:
             exit "$status"
           fi
           tail -n 40 gradle-build.log
+      - name: Upload Gradle diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kitkat-gradle-log
+          path: android_kitkat_java/gradle-build.log
+          if-no-files-found: warn
       - name: Upload validation APK
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && success()
         uses: actions/upload-artifact@v4
         with:
           name: kidsgame-kitkat-pr
           path: android_kitkat_java/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
       - name: Publish separate legacy APK
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && success()
         run: |
           mkdir -p apk/legacy
           cp android_kitkat_java/app/build/outputs/apk/release/app-release.apk apk/legacy/kidsgame-kitkat.apk
       - name: Commit legacy APK only
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
