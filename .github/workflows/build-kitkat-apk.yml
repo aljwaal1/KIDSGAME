@@ -6,13 +6,18 @@ on:
     paths:
       - 'android_kitkat_java/**'
       - '.github/workflows/build-kitkat-apk.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'android_kitkat_java/**'
+      - '.github/workflows/build-kitkat-apk.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: kidsgame-kitkat-build
+  group: kidsgame-kitkat-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -30,11 +35,20 @@ jobs:
       - name: Build legacy Android 4.4 APK
         working-directory: android_kitkat_java
         run: gradle --no-daemon assembleRelease
+      - name: Upload validation APK
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kidsgame-kitkat-pr
+          path: android_kitkat_java/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
       - name: Publish separate legacy APK
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p apk/legacy
           cp android_kitkat_java/app/build/outputs/apk/release/app-release.apk apk/legacy/kidsgame-kitkat.apk
       - name: Commit legacy APK only
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
