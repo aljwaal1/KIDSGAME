@@ -11,14 +11,24 @@ class SequenceOrderPage extends StatefulWidget {
 }
 
 class _SequenceOrderPageState extends State<SequenceOrderPage> {
-  List<_StepItem> items = <_StepItem>[
+  List<_StepItem> items = <_StepItem>[];
+  int score = 0;
+  int tries = 0;
+  bool completed = false;
+  bool busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _reset(playSound: false);
+  }
+
+  List<_StepItem> _freshItems() => <_StepItem>[
     const _StepItem(3, 'نخرجها من الفرن', Icons.local_fire_department_rounded, Color(0xFFEF4444)),
     const _StepItem(1, 'نجهّز العجينة', Icons.bakery_dining_rounded, Color(0xFFF59E0B)),
     const _StepItem(4, 'نأكلها مع العائلة', Icons.emoji_food_beverage_rounded, Color(0xFF22C55E)),
     const _StepItem(2, 'نضعها في الفرن', Icons.countertops_rounded, Color(0xFF3B82F6)),
-  ];
-  int score = 0;
-  int tries = 0;
+  ]..shuffle();
 
   bool get solved {
     for (int i = 0; i < items.length; i++) {
@@ -27,21 +37,18 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
     return true;
   }
 
-  void _reset() {
+  void _reset({bool playSound = true}) {
     setState(() {
-      items = <_StepItem>[
-        const _StepItem(3, 'نخرجها من الفرن', Icons.local_fire_department_rounded, Color(0xFFEF4444)),
-        const _StepItem(1, 'نجهّز العجينة', Icons.bakery_dining_rounded, Color(0xFFF59E0B)),
-        const _StepItem(4, 'نأكلها مع العائلة', Icons.emoji_food_beverage_rounded, Color(0xFF22C55E)),
-        const _StepItem(2, 'نضعها في الفرن', Icons.countertops_rounded, Color(0xFF3B82F6)),
-      ]..shuffle();
+      items = _freshItems();
       tries = 0;
+      completed = false;
+      busy = false;
     });
-    SoundService.instance.play('click.wav');
+    if (playSound) SoundService.instance.play('click.wav');
   }
 
   void _swap(int from, int to) {
-    if (to < 0 || to >= items.length) return;
+    if (completed || busy || to < 0 || to >= items.length) return;
     setState(() {
       final _StepItem temp = items[from];
       items[from] = items[to];
@@ -51,22 +58,31 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
   }
 
   Future<void> _check() async {
+    if (completed || busy) return;
+    busy = true;
     setState(() => tries++);
-    if (solved) {
-      await ScoreService.instance.addStars(3);
-      await SoundService.instance.play('win.wav');
-      if (!mounted) return;
-      setState(() => score++);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('رائع! رتبت القصة بشكل صحيح')));
-    } else {
-      await SoundService.instance.play('wrong.wav');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حاول ترتيب الأحداث من البداية للنهاية')));
+    try {
+      if (solved) {
+        completed = true;
+        await ScoreService.instance.addStars(3);
+        await SoundService.instance.play('win.wav');
+        if (!mounted) return;
+        setState(() => score++);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('رائع! رتبت القصة بشكل صحيح')));
+      } else {
+        await SoundService.instance.play('wrong.wav');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حاول ترتيب الأحداث من البداية للنهاية')));
+      }
+    } finally {
+      busy = false;
+      if (mounted) setState(() {});
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final canEdit = !completed && !busy;
     return Scaffold(
       appBar: AppBar(
         title: const Text('رتّب التسلسل'),
@@ -78,18 +94,24 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
           children: <Widget>[
             _Header(score: score, tries: tries),
             const SizedBox(height: 8),
-            const Text('رتّب القصة بالأسهم من البداية للنهاية', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Color(0xFF64748B), fontSize: 14)),
+            Text(completed ? 'اكتمل الترتيب بنجاح 🎉' : 'رتّب القصة بالأسهم من البداية للنهاية', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: completed ? const Color(0xFF16A34A) : const Color(0xFF64748B), fontSize: 14, fontWeight: completed ? FontWeight.w800 : FontWeight.normal)),
             const SizedBox(height: 8),
             Expanded(
               child: Column(
                 children: <Widget>[
                   for (int i = 0; i < items.length; i++)
-                    Expanded(child: _StepCard(item: items[i], index: i, isFirst: i == 0, isLast: i == items.length - 1, onUp: () => _swap(i, i - 1), onDown: () => _swap(i, i + 1))),
+                    Expanded(child: _StepCard(item: items[i], index: i, enabled: canEdit, isFirst: i == 0, isLast: i == items.length - 1, onUp: () => _swap(i, i - 1), onDown: () => _swap(i, i + 1))),
                 ],
               ),
             ),
             const SizedBox(height: 8),
-            SizedBox(width: double.infinity, height: 48, child: FilledButton.icon(onPressed: _check, icon: const Icon(Icons.check_rounded), label: const Text('تحقق من الترتيب'))),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: completed
+                  ? FilledButton.icon(onPressed: _reset, icon: const Icon(Icons.replay_rounded), label: const Text('جولة جديدة'))
+                  : FilledButton.icon(onPressed: busy ? null : _check, icon: const Icon(Icons.check_rounded), label: const Text('تحقق من الترتيب')),
+            ),
           ],
         ),
       ),
@@ -106,9 +128,10 @@ class _StepItem {
 }
 
 class _StepCard extends StatelessWidget {
-  const _StepCard({required this.item, required this.index, required this.isFirst, required this.isLast, required this.onUp, required this.onDown});
+  const _StepCard({required this.item, required this.index, required this.enabled, required this.isFirst, required this.isLast, required this.onUp, required this.onDown});
   final _StepItem item;
   final int index;
+  final bool enabled;
   final bool isFirst;
   final bool isLast;
   final VoidCallback onUp;
@@ -126,8 +149,8 @@ class _StepCard extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(child: Text(item.text, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800))),
             Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-              SizedBox(width: 38, height: 30, child: IconButton(padding: EdgeInsets.zero, onPressed: isFirst ? null : onUp, icon: const Icon(Icons.keyboard_arrow_up_rounded))),
-              SizedBox(width: 38, height: 30, child: IconButton(padding: EdgeInsets.zero, onPressed: isLast ? null : onDown, icon: const Icon(Icons.keyboard_arrow_down_rounded))),
+              SizedBox(width: 38, height: 30, child: IconButton(padding: EdgeInsets.zero, onPressed: !enabled || isFirst ? null : onUp, icon: const Icon(Icons.keyboard_arrow_up_rounded))),
+              SizedBox(width: 38, height: 30, child: IconButton(padding: EdgeInsets.zero, onPressed: !enabled || isLast ? null : onDown, icon: const Icon(Icons.keyboard_arrow_down_rounded))),
             ]),
           ]),
         ),
