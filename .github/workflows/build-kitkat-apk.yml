@@ -34,7 +34,16 @@ jobs:
           gradle-version: '8.2'
       - name: Build legacy Android 4.4 APK
         working-directory: android_kitkat_java
-        run: gradle --no-daemon assembleRelease
+        run: |
+          set +e
+          gradle --no-daemon --console plain --stacktrace assembleRelease > gradle-build.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo '--- Gradle failure details ---'
+            tail -n 220 gradle-build.log
+            exit "$status"
+          fi
+          tail -n 40 gradle-build.log
       - name: Upload validation APK
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
