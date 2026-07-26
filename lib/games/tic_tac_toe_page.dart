@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -34,14 +35,17 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
   int oWins = 0;
   int draws = 0;
   int aiRound = 0;
+  int roundId = 0;
   _AiStrength aiStrength = _AiStrength.medium;
   final Random random = Random();
+  Timer? _aiTimer;
   final GlobalKey<ConfettiOverlayState> confettiKey = GlobalKey<ConfettiOverlayState>();
   late final AnimationController lineController = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
 
   void setMode(TicTacMode value) {
     if (mode == value) return;
     SoundService.instance.play('click.wav');
+    _cancelAiMove();
     setState(() => mode = value);
     reset();
   }
@@ -53,6 +57,7 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
   }
 
   void _place(int index) {
+    if (index < 0 || index >= board.length || board[index].isNotEmpty || finished) return;
     SoundService.instance.play('tap.wav');
     setState(() {
       board[index] = player;
@@ -67,6 +72,8 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
       winLine = winner;
       final symbol = board[winner.first];
       finished = true;
+      aiThinking = false;
+      _aiTimer?.cancel();
       if (symbol == 'X') { xWins++; message = 'فاز اللاعب X 🎉'; }
       else { oWins++; message = mode == TicTacMode.computer ? 'فاز الكمبيوتر 🤖' : 'فاز اللاعب O 🎉'; }
       HapticFeedback.heavyImpact();
@@ -77,6 +84,8 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
     } else if (!board.contains('')) {
       message = 'تعادل';
       finished = true;
+      aiThinking = false;
+      _aiTimer?.cancel();
       draws++;
       HapticFeedback.mediumImpact();
     } else {
@@ -106,12 +115,9 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
 
   String _aiStrengthText() {
     switch (aiStrength) {
-      case _AiStrength.strong:
-        return '🤖 قوي';
-      case _AiStrength.medium:
-        return '🤖 متوسط';
-      case _AiStrength.weak:
-        return '🤖 سهل';
+      case _AiStrength.strong: return '🤖 قوي';
+      case _AiStrength.medium: return '🤖 متوسط';
+      case _AiStrength.weak: return '🤖 سهل';
     }
   }
 
@@ -149,47 +155,57 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
   int? _chooseWeakAiMove() {
     final cells = _emptyCells()..shuffle(random);
     if (cells.isEmpty) return null;
-    final safeMistakes = cells.where((i) => _findWinningMove('O') != i).toList();
+    final winningMove = _findWinningMove('O');
+    final safeMistakes = cells.where((i) => winningMove != i).toList();
     if (safeMistakes.isNotEmpty && random.nextInt(100) < 70) return safeMistakes.first;
     return cells.first;
   }
 
   int? _chooseAiMove() {
     switch (aiStrength) {
-      case _AiStrength.strong:
-        return _chooseStrongAiMove();
-      case _AiStrength.medium:
-        return _chooseMediumAiMove();
-      case _AiStrength.weak:
-        return _chooseWeakAiMove();
+      case _AiStrength.strong: return _chooseStrongAiMove();
+      case _AiStrength.medium: return _chooseMediumAiMove();
+      case _AiStrength.weak: return _chooseWeakAiMove();
     }
   }
 
+  void _cancelAiMove() {
+    _aiTimer?.cancel();
+    _aiTimer = null;
+    aiThinking = false;
+  }
+
   void _scheduleAiMove() {
+    _aiTimer?.cancel();
+    final scheduledRound = roundId;
     setState(() => aiThinking = true);
-    Future<void>.delayed(const Duration(milliseconds: 550), () {
-      if (!mounted) return;
-      if (finished) { setState(() => aiThinking = false); return; }
+    _aiTimer = Timer(const Duration(milliseconds: 550), () {
+      if (!mounted || scheduledRound != roundId || finished || mode != TicTacMode.computer || player != 'O') return;
       final move = _chooseAiMove();
       setState(() => aiThinking = false);
-      if (move != null) _place(move);
+      if (move != null && board[move].isEmpty) _place(move);
     });
   }
 
   void reset() {
+    _cancelAiMove();
+    roundId++;
     setState(() {
       board = List<String>.filled(9, '');
       player = 'X';
       if (mode == TicTacMode.computer) _prepareNextAiStrength();
       message = mode == TicTacMode.computer ? 'دورك الآن، ابدأ اللعب ${_aiStrengthText()}' : 'دور اللاعب X';
       finished = false;
-      aiThinking = false;
       winLine = <int>[];
     });
   }
 
   @override
-  void dispose() { lineController.dispose(); super.dispose(); }
+  void dispose() {
+    _aiTimer?.cancel();
+    lineController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
