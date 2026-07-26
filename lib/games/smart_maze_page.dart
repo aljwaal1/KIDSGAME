@@ -13,10 +13,13 @@ class _SmartMazePageState extends State<SmartMazePage> {
   static const int size = 5;
   final Set<int> walls = <int>{6, 8, 11, 13, 16, 18};
   int hero = 0;
-  int goal = 24;
+  final int goal = 24;
   int moves = 0;
+  bool completed = false;
+  bool busy = false;
 
   Future<void> _move(int dr, int dc) async {
+    if (completed || busy) return;
     final int row = hero ~/ size;
     final int col = hero % size;
     final int nr = row + dr;
@@ -27,23 +30,29 @@ class _SmartMazePageState extends State<SmartMazePage> {
       await SoundService.instance.play('wrong.wav');
       return;
     }
+    busy = true;
     setState(() {
       hero = next;
       moves++;
     });
     await SoundService.instance.play('move.wav');
     if (hero == goal) {
+      completed = true;
       await ScoreService.instance.addStars(moves <= 10 ? 5 : 3);
       await SoundService.instance.play('win.wav');
       if (!mounted) return;
+      setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('وصلت للنجمة خلال $moves خطوة')));
     }
+    busy = false;
   }
 
   void _reset() {
     setState(() {
       hero = 0;
       moves = 0;
+      completed = false;
+      busy = false;
     });
     SoundService.instance.play('click.wav');
   }
@@ -51,7 +60,7 @@ class _SmartMazePageState extends State<SmartMazePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: const Text('المتاهة الذكية'), actions: <Widget>[IconButton(onPressed: _reset, icon: const Icon(Icons.refresh_rounded))]), body: ListView(padding: const EdgeInsets.fromLTRB(18, 12, 18, 100), children: <Widget>[
-      Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(26), gradient: const LinearGradient(colors: <Color>[Color(0xFF22C55E), Color(0xFF14B8A6)])), child: Text('أوصل البطل إلى النجمة\nالخطوات: $moves', style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 22, fontWeight: FontWeight.w900))),
+      Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(26), gradient: const LinearGradient(colors: <Color>[Color(0xFF22C55E), Color(0xFF14B8A6)])), child: Text(completed ? 'وصلت إلى النجمة 🎉\nالخطوات: $moves' : 'أوصل البطل إلى النجمة\nالخطوات: $moves', style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 22, fontWeight: FontWeight.w900))),
       const SizedBox(height: 18),
       AspectRatio(aspectRatio: 1, child: GridView.builder(physics: const NeverScrollableScrollPhysics(), itemCount: size * size, gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: size, mainAxisSpacing: 6, crossAxisSpacing: 6), itemBuilder: (BuildContext context, int index) {
         final bool wall = walls.contains(index);
@@ -61,13 +70,13 @@ class _SmartMazePageState extends State<SmartMazePage> {
       })),
       const SizedBox(height: 18),
       Column(children: <Widget>[
-        IconButton.filledTonal(onPressed: () => _move(-1, 0), icon: const Icon(Icons.keyboard_arrow_up_rounded)),
+        IconButton.filledTonal(onPressed: completed || busy ? null : () => _move(-1, 0), icon: const Icon(Icons.keyboard_arrow_up_rounded)),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-          IconButton.filledTonal(onPressed: () => _move(0, -1), icon: const Icon(Icons.keyboard_arrow_right_rounded)),
+          IconButton.filledTonal(onPressed: completed || busy ? null : () => _move(0, -1), icon: const Icon(Icons.keyboard_arrow_right_rounded)),
           const SizedBox(width: 20),
-          IconButton.filledTonal(onPressed: () => _move(0, 1), icon: const Icon(Icons.keyboard_arrow_left_rounded)),
+          IconButton.filledTonal(onPressed: completed || busy ? null : () => _move(0, 1), icon: const Icon(Icons.keyboard_arrow_left_rounded)),
         ]),
-        IconButton.filledTonal(onPressed: () => _move(1, 0), icon: const Icon(Icons.keyboard_arrow_down_rounded)),
+        IconButton.filledTonal(onPressed: completed || busy ? null : () => _move(1, 0), icon: const Icon(Icons.keyboard_arrow_down_rounded)),
       ]),
     ]));
   }
