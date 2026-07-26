@@ -8,13 +8,20 @@ on:
       - 'assets/**'
       - 'pubspec.yaml'
       - '.github/workflows/build-apk.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'lib/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/build-apk.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: kidsgame-modern-flutter
+  group: kidsgame-modern-flutter-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -34,6 +41,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
 
       - name: Prepare Android project
         run: |
@@ -43,10 +51,19 @@ jobs:
       - name: Get packages
         run: flutter pub get
 
-      - name: Set Android package and app name
+      - name: Set Android application ID and app name
         run: |
-          sed -i "s/applicationId = \"com.example.kids_games_arena\"/applicationId = \"com.explapp.kidsgame\"/" android/app/build.gradle || true
-          sed -i "s/applicationId \"com.example.kids_games_arena\"/applicationId \"com.explapp.kidsgame\"/" android/app/build.gradle || true
+          if [ -f android/app/build.gradle.kts ]; then
+            sed -i -E 's/applicationId = "[^"]+"/applicationId = "com.explapp.kidsgame"/' android/app/build.gradle.kts
+            grep -q 'applicationId = "com.explapp.kidsgame"' android/app/build.gradle.kts
+          elif [ -f android/app/build.gradle ]; then
+            sed -i -E 's/applicationId[[:space:]]*=?[[:space:]]*"[^"]+"/applicationId "com.explapp.kidsgame"/' android/app/build.gradle
+            grep -q 'applicationId "com.explapp.kidsgame"' android/app/build.gradle
+          else
+            echo 'Android app Gradle file was not generated.' >&2
+            exit 1
+          fi
+
           cat > android/app/src/main/AndroidManifest.xml <<'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <application
@@ -78,26 +95,48 @@ jobs:
         run: dart run flutter_launcher_icons
 
       - name: Analyze
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        run: flutter analyze
+
+      - name: Run tests when present
+        run: |
+          if find test -type f -name '*_test.dart' -print -quit 2>/dev/null | grep -q .; then
+            flutter test
+          else
+            echo 'No Flutter tests are present yet.'
+          fi
 
       - name: Build release APK
         run: flutter build apk --release --no-tree-shake-icons
 
+      - name: Upload validation APK
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kidsgame-modern-pr
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
       - name: Copy APK
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p apk/modern
           cp build/app/outputs/flutter-apk/app-release.apk apk/modern/kidsgame.apk
           cat > DOWNLOAD_APK.md <<'EOF'
           # KIDSGAME APK
 
-          APK:
+          Modern Android APK:
           https://github.com/aljwaal1/KIDSGAME/raw/main/apk/modern/kidsgame.apk
+
+          Android 4.4+ legacy APK:
+          https://github.com/aljwaal1/KIDSGAME/raw/main/apk/legacy/kidsgame-kitkat.apk
           EOF
 
       - name: Commit APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add apk/modern/kidsgame.apk DOWNLOAD_APK.md
           git commit -m "Update APK" || echo "No changes"
-          git push || true
+          git pull --rebase origin main
+          git push
