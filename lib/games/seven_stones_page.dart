@@ -17,6 +17,7 @@ class _SevenStonesPageState extends State<SevenStonesPage> with SingleTickerProv
   int score = 0;
   int misses = 0;
   bool finished = false;
+  bool busy = false;
 
   @override
   void initState() {
@@ -35,36 +36,50 @@ class _SevenStonesPageState extends State<SevenStonesPage> with SingleTickerProv
       level = 0;
       misses = 0;
       finished = false;
+      busy = false;
     });
     controller.repeat(reverse: true);
     SoundService.instance.play('click.wav');
   }
 
   Future<void> placeStone() async {
-    if (finished) return;
+    if (finished || busy) return;
+    setState(() => busy = true);
     final movingX = math.sin(controller.value * math.pi * 2) * .36;
-    if (movingX.abs() < .12) {
-      await SoundService.instance.play('pop.wav');
-      setState(() => level++);
-      if (level >= 7) {
-        finished = true;
-        score++;
-        controller.stop();
-        await ScoreService.instance.addStars(3);
-        await SoundService.instance.play('win.wav');
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('رائع! بنيت سبع حجارة')));
+    try {
+      if (movingX.abs() < .12) {
+        await SoundService.instance.play('pop.wav');
+        if (!mounted) return;
+        setState(() => level++);
+        if (level >= 7) {
+          setState(() {
+            finished = true;
+            score++;
+          });
+          controller.stop();
+          await ScoreService.instance.addStars(3);
+          await SoundService.instance.play('win.wav');
+          if (mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('رائع! بنيت سبع حجارة')));
+          }
+        }
+      } else {
+        await SoundService.instance.play('wrong.wav');
+        if (!mounted) return;
+        setState(() {
+          misses++;
+          if (level > 0) level--;
+        });
       }
-    } else {
-      await SoundService.instance.play('wrong.wav');
-      setState(() {
-        misses++;
-        if (level > 0) level--;
-      });
+    } finally {
+      if (mounted) setState(() => busy = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final canPlace = !finished && !busy;
     return Scaffold(
       appBar: AppBar(title: const Text('سبع حجارة'), actions: <Widget>[IconButton(onPressed: reset, icon: const Icon(Icons.refresh_rounded))]),
       body: Padding(
@@ -76,7 +91,7 @@ class _SevenStonesPageState extends State<SevenStonesPage> with SingleTickerProv
             Expanded(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: placeStone,
+                onTap: canPlace ? placeStone : null,
                 child: AnimatedBuilder(
                   animation: controller,
                   builder: (context, _) => CustomPaint(
@@ -87,7 +102,13 @@ class _SevenStonesPageState extends State<SevenStonesPage> with SingleTickerProv
               ),
             ),
             const SizedBox(height: 8),
-            SizedBox(width: double.infinity, height: 52, child: FilledButton.icon(onPressed: placeStone, icon: const Icon(Icons.touch_app_rounded), label: const Text('ضع الحجر عندما يكون في الوسط'))),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: finished
+                  ? FilledButton.icon(onPressed: reset, icon: const Icon(Icons.replay_rounded), label: const Text('ابدأ برجًا جديدًا'))
+                  : FilledButton.icon(onPressed: canPlace ? placeStone : null, icon: const Icon(Icons.touch_app_rounded), label: Text(busy ? 'انتظر...' : 'ضع الحجر عندما يكون في الوسط')),
+            ),
           ],
         ),
       ),
