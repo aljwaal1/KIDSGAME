@@ -6,8 +6,8 @@ android {
     defaultConfig {
         applicationId 'com.explapp.kidsgame.legacy'
         minSdk 19
-        targetSdk 28
-        versionCode 1
-        versionName '1.0-legacy'
+        targetSdk 34
+        versionCode 2
+        versionName '1.1-legacy'
     }
 }
