@@ -6,12 +6,16 @@ import 'games/sliding_puzzle_page.dart';
 import 'games/tic_tac_toe_page.dart';
 import 'screens/developer_page.dart';
 import 'screens/home_page.dart';
+import 'services/score_service.dart';
 import 'services/sound_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SoundService.instance.init();
+  await Future.wait(<Future<void>>[
+    SoundService.instance.init(),
+    ScoreService.instance.init(),
+  ]);
   runApp(const KidsGamesArenaApp());
 }
 
@@ -73,7 +77,13 @@ class _GamesHomeState extends State<GamesHome> {
               return IconButton(
                 tooltip: muted ? 'تشغيل الصوت' : 'كتم الصوت',
                 icon: Icon(muted ? Icons.volume_off_rounded : Icons.volume_up_rounded),
-                onPressed: () => SoundService.instance.toggleMute(),
+                onPressed: () async {
+                  final wasMuted = muted;
+                  await SoundService.instance.toggleMute();
+                  if (wasMuted) {
+                    await SoundService.instance.play('click.wav');
+                  }
+                },
               );
             },
           ),
