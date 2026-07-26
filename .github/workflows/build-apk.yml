@@ -90,6 +90,14 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release --no-tree-shake-icons
 
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kidsgame-modern-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Copy APK
         run: |
           mkdir -p apk/modern
