@@ -19,6 +19,8 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
   ];
   int score = 0;
   int tries = 0;
+  bool completed = false;
+  bool checking = false;
 
   bool get solved {
     for (int i = 0; i < items.length; i++) {
@@ -36,12 +38,14 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
         const _StepItem(2, 'نضعها في الفرن', Icons.countertops_rounded, Color(0xFF3B82F6)),
       ]..shuffle();
       tries = 0;
+      completed = false;
+      checking = false;
     });
     SoundService.instance.play('click.wav');
   }
 
   void _swap(int from, int to) {
-    if (to < 0 || to >= items.length) return;
+    if (completed || checking || to < 0 || to >= items.length) return;
     setState(() {
       final _StepItem temp = items[from];
       items[from] = items[to];
@@ -51,8 +55,11 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
   }
 
   Future<void> _check() async {
+    if (checking || completed) return;
+    checking = true;
     setState(() => tries++);
     if (solved) {
+      completed = true;
       await ScoreService.instance.addStars(3);
       await SoundService.instance.play('win.wav');
       if (!mounted) return;
@@ -63,6 +70,8 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حاول ترتيب الأحداث من البداية للنهاية')));
     }
+    checking = false;
+    if (mounted) setState(() {});
   }
 
   @override
@@ -78,18 +87,18 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
           children: <Widget>[
             _Header(score: score, tries: tries),
             const SizedBox(height: 8),
-            const Text('رتّب القصة بالأسهم من البداية للنهاية', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Color(0xFF64748B), fontSize: 14)),
+            Text(completed ? 'أحسنت! اضغط خلط جديد لجولة أخرى' : 'رتّب القصة بالأسهم من البداية للنهاية', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF64748B), fontSize: 14)),
             const SizedBox(height: 8),
             Expanded(
               child: Column(
                 children: <Widget>[
                   for (int i = 0; i < items.length; i++)
-                    Expanded(child: _StepCard(item: items[i], index: i, isFirst: i == 0, isLast: i == items.length - 1, onUp: () => _swap(i, i - 1), onDown: () => _swap(i, i + 1))),
+                    Expanded(child: _StepCard(item: items[i], index: i, isFirst: i == 0, isLast: i == items.length - 1, disabled: completed || checking, onUp: () => _swap(i, i - 1), onDown: () => _swap(i, i + 1))),
                 ],
               ),
             ),
             const SizedBox(height: 8),
-            SizedBox(width: double.infinity, height: 48, child: FilledButton.icon(onPressed: _check, icon: const Icon(Icons.check_rounded), label: const Text('تحقق من الترتيب'))),
+            SizedBox(width: double.infinity, height: 48, child: FilledButton.icon(onPressed: completed || checking ? null : _check, icon: const Icon(Icons.check_rounded), label: Text(completed ? 'تم الحل' : 'تحقق من الترتيب'))),
           ],
         ),
       ),
@@ -106,11 +115,12 @@ class _StepItem {
 }
 
 class _StepCard extends StatelessWidget {
-  const _StepCard({required this.item, required this.index, required this.isFirst, required this.isLast, required this.onUp, required this.onDown});
+  const _StepCard({required this.item, required this.index, required this.isFirst, required this.isLast, required this.disabled, required this.onUp, required this.onDown});
   final _StepItem item;
   final int index;
   final bool isFirst;
   final bool isLast;
+  final bool disabled;
   final VoidCallback onUp;
   final VoidCallback onDown;
 
@@ -126,8 +136,8 @@ class _StepCard extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(child: Text(item.text, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800))),
             Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-              SizedBox(width: 38, height: 30, child: IconButton(padding: EdgeInsets.zero, onPressed: isFirst ? null : onUp, icon: const Icon(Icons.keyboard_arrow_up_rounded))),
-              SizedBox(width: 38, height: 30, child: IconButton(padding: EdgeInsets.zero, onPressed: isLast ? null : onDown, icon: const Icon(Icons.keyboard_arrow_down_rounded))),
+              SizedBox(width: 38, height: 30, child: IconButton(padding: EdgeInsets.zero, onPressed: disabled || isFirst ? null : onUp, icon: const Icon(Icons.keyboard_arrow_up_rounded))),
+              SizedBox(width: 38, height: 30, child: IconButton(padding: EdgeInsets.zero, onPressed: disabled || isLast ? null : onDown, icon: const Icon(Icons.keyboard_arrow_down_rounded))),
             ]),
           ]),
         ),

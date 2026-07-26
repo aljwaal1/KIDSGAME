@@ -8,13 +8,20 @@ on:
       - 'assets/**'
       - 'pubspec.yaml'
       - '.github/workflows/build-apk.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'lib/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/build-apk.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: kidsgame-modern-flutter
+  group: kidsgame-modern-flutter-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -95,6 +102,7 @@ jobs:
           EOF
 
       - name: Commit APK
+        if: github.event_name != 'pull_request'
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
