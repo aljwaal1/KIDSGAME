@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
@@ -16,6 +18,8 @@ class _ShapeShadowPageState extends State<ShapeShadowPage> {
   int score = 0;
   late _ShapeItem target;
   late List<_ShapeItem> choices;
+  bool locked = false;
+  Timer? _nextRoundTimer;
 
   final List<_ShapeItem> bank = const <_ShapeItem>[
     _ShapeItem('نجمة', Icons.star_rounded, Color(0xFFF59E0B)),
@@ -32,25 +36,41 @@ class _ShapeShadowPageState extends State<ShapeShadowPage> {
   }
 
   void _round() {
+    _nextRoundTimer?.cancel();
     final shuffled = List<_ShapeItem>.from(bank)..shuffle(_random);
-    target = shuffled.first;
-    choices = shuffled.take(4).toList()..shuffle(_random);
-    setState(() {});
+    setState(() {
+      target = shuffled.first;
+      choices = shuffled.take(4).toList()..shuffle(_random);
+      locked = false;
+    });
   }
 
   Future<void> _pick(_ShapeItem item) async {
+    if (locked) return;
+    setState(() => locked = true);
     if (item.name == target.name) {
       await SoundService.instance.play('chime.wav');
       await ScoreService.instance.addStars(2);
       if (!mounted) return;
       setState(() => score++);
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أحسنت! هذا هو الظل الصحيح')));
-      Future<void>.delayed(const Duration(milliseconds: 450), _round);
+      _nextRoundTimer = Timer(const Duration(milliseconds: 550), () {
+        if (mounted) _round();
+      });
     } else {
       await SoundService.instance.play('wrong.wav');
       if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ليس هذا، جرّب ظلًا آخر')));
+      setState(() => locked = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _nextRoundTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -70,7 +90,7 @@ class _ShapeShadowPageState extends State<ShapeShadowPage> {
                   Icon(target.icon, color: target.color, size: 70),
                   const SizedBox(width: 18),
                   Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-                    const Text('ابحث عن ظل الشكل', style: TextStyle(fontFamily: 'Changa', fontSize: 18, fontWeight: FontWeight.w800)),
+                    Text(locked ? 'انتظر الجولة التالية' : 'ابحث عن ظل الشكل', style: const TextStyle(fontFamily: 'Changa', fontSize: 18, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 4),
                     Text(target.name, style: const TextStyle(fontSize: 17, color: Color(0xFF64748B))),
                   ]),
@@ -88,10 +108,14 @@ class _ShapeShadowPageState extends State<ShapeShadowPage> {
                   return Card(
                     child: InkWell(
                       borderRadius: BorderRadius.circular(24),
-                      onTap: () => _pick(item),
-                      child: Container(
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: const Color(0xFFF1F5F9)),
-                        child: Icon(item.icon, color: const Color(0xFF475569), size: 70),
+                      onTap: locked ? null : () => _pick(item),
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 150),
+                        opacity: locked ? 0.72 : 1,
+                        child: Container(
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: const Color(0xFFF1F5F9)),
+                          child: Icon(item.icon, color: const Color(0xFF475569), size: 70),
+                        ),
                       ),
                     ),
                   );
