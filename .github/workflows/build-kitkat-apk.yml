@@ -6,13 +6,18 @@ on:
     paths:
       - 'android_kitkat_java/**'
       - '.github/workflows/build-kitkat-apk.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'android_kitkat_java/**'
+      - '.github/workflows/build-kitkat-apk.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: kidsgame-kitkat-build
+  group: kidsgame-kitkat-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -29,12 +34,43 @@ jobs:
           gradle-version: '8.2'
       - name: Build legacy Android 4.4 APK
         working-directory: android_kitkat_java
-        run: gradle --no-daemon assembleRelease
+        run: |
+          set +e
+          gradle --no-daemon --console plain --stacktrace assembleRelease > gradle-build.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo '--- Gradle failure details ---'
+            tail -n 220 gradle-build.log
+            exit "$status"
+          fi
+          tail -n 40 gradle-build.log
+          apk_path=$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)
+          if [ -z "$apk_path" ]; then
+            echo 'Legacy APK was not generated.' >&2
+            exit 1
+          fi
+          cp "$apk_path" app/build/outputs/apk/release/kidsgame-kitkat.apk
+      - name: Upload Gradle diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kitkat-gradle-log
+          path: android_kitkat_java/gradle-build.log
+          if-no-files-found: warn
+      - name: Upload validation APK
+        if: github.event_name == 'pull_request' && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kidsgame-kitkat-pr
+          path: android_kitkat_java/app/build/outputs/apk/release/kidsgame-kitkat.apk
+          if-no-files-found: error
       - name: Publish separate legacy APK
+        if: github.event_name != 'pull_request' && success()
         run: |
           mkdir -p apk/legacy
-          cp android_kitkat_java/app/build/outputs/apk/release/app-release.apk apk/legacy/kidsgame-kitkat.apk
+          cp android_kitkat_java/app/build/outputs/apk/release/kidsgame-kitkat.apk apk/legacy/kidsgame-kitkat.apk
       - name: Commit legacy APK only
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"

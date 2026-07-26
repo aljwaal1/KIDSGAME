@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
@@ -17,6 +19,8 @@ class _OddOneOutPageState extends State<OddOneOutPage> {
   int score = 0;
   late List<_OddItem> items;
   late int correctIndex;
+  bool locked = false;
+  Timer? _nextRoundTimer;
 
   final List<List<_OddItem>> sets = <List<_OddItem>>[
     <_OddItem>[
@@ -46,16 +50,20 @@ class _OddOneOutPageState extends State<OddOneOutPage> {
   }
 
   void _newRound() {
+    _nextRoundTimer?.cancel();
     final source = List<_OddItem>.from(sets[_random.nextInt(sets.length)]);
     source.shuffle(_random);
     setState(() {
       items = source;
       correctIndex = items.indexWhere((_OddItem item) => item.label == 'سيارة' || item.label == 'قلم' || item.label == 'مربع');
+      locked = false;
     });
   }
 
   Future<void> _answer(int index) async {
+    if (locked) return;
     if (index == correctIndex) {
+      setState(() => locked = true);
       await SoundService.instance.play('win.wav');
       await ScoreService.instance.addStars(2);
       if (!mounted) return;
@@ -64,16 +72,27 @@ class _OddOneOutPageState extends State<OddOneOutPage> {
         level++;
       });
       _show('رائع! وجدت المختلف ⭐');
-      Future<void>.delayed(const Duration(milliseconds: 450), _newRound);
+      _nextRoundTimer = Timer(const Duration(milliseconds: 550), () {
+        if (mounted) _newRound();
+      });
     } else {
+      setState(() => locked = true);
       await SoundService.instance.play('wrong.wav');
       if (!mounted) return;
       _show('حاول مرة أخرى، ركّز في المجموعة');
+      setState(() => locked = false);
     }
   }
 
   void _show(String text) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  @override
+  void dispose() {
+    _nextRoundTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -84,7 +103,7 @@ class _OddOneOutPageState extends State<OddOneOutPage> {
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
         child: Column(
           children: <Widget>[
-            _TopCard(title: 'أي صورة لا تشبه الباقي؟', subtitle: 'النقاط: $score  •  المستوى: $level', icon: Icons.visibility_rounded, color: const Color(0xFF14B8A6)),
+            _TopCard(title: locked ? 'انتظر الجولة التالية...' : 'أي صورة لا تشبه الباقي؟', subtitle: 'النقاط: $score  •  المستوى: $level', icon: Icons.visibility_rounded, color: const Color(0xFF14B8A6)),
             const SizedBox(height: 10),
             Expanded(
               child: GridView.builder(
@@ -93,7 +112,7 @@ class _OddOneOutPageState extends State<OddOneOutPage> {
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10),
                 itemBuilder: (BuildContext context, int index) {
                   final item = items[index];
-                  return _PictureButton(item: item, onTap: () => _answer(index));
+                  return _PictureButton(item: item, enabled: !locked, onTap: () => _answer(index));
                 },
               ),
             ),
@@ -113,8 +132,9 @@ class _OddItem {
 }
 
 class _PictureButton extends StatelessWidget {
-  const _PictureButton({required this.item, required this.onTap});
+  const _PictureButton({required this.item, required this.enabled, required this.onTap});
   final _OddItem item;
+  final bool enabled;
   final VoidCallback onTap;
 
   @override
@@ -123,24 +143,28 @@ class _PictureButton extends StatelessWidget {
       elevation: 3,
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: LinearGradient(colors: <Color>[item.color.withAlpha(45), Colors.white], begin: Alignment.topRight, end: Alignment.bottomLeft),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Container(
-                width: 62,
-                height: 62,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: item.color.withAlpha(35), border: Border.all(color: item.color.withAlpha(90), width: 2)),
-                child: Icon(item.icon, color: item.color, size: 36),
-              ),
-              const SizedBox(height: 8),
-              Text(item.label, style: const TextStyle(fontFamily: 'Changa', fontSize: 18, fontWeight: FontWeight.w800)),
-            ],
+        onTap: enabled ? onTap : null,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          opacity: enabled ? 1 : 0.72,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(colors: <Color>[item.color.withAlpha(45), Colors.white], begin: Alignment.topRight, end: Alignment.bottomLeft),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Container(
+                  width: 62,
+                  height: 62,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: item.color.withAlpha(35), border: Border.all(color: item.color.withAlpha(90), width: 2)),
+                  child: Icon(item.icon, color: item.color, size: 36),
+                ),
+                const SizedBox(height: 8),
+                Text(item.label, style: const TextStyle(fontFamily: 'Changa', fontSize: 18, fontWeight: FontWeight.w800)),
+              ],
+            ),
           ),
         ),
       ),

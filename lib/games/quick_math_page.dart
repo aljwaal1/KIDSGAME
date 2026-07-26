@@ -17,6 +17,7 @@ class _QuickMathPageState extends State<QuickMathPage> {
   bool plus = true;
   int score = 0;
   late List<int> options;
+  bool answering = false;
 
   int get answer => plus ? a + b : a - b;
 
@@ -44,16 +45,23 @@ class _QuickMathPageState extends State<QuickMathPage> {
   }
 
   Future<void> _pick(int value) async {
-    if (value == answer) {
-      await SoundService.instance.play('pop.wav');
-      await ScoreService.instance.addStars(1);
-      if (!mounted) return;
-      setState(() => score++);
-      _round();
-    } else {
-      await SoundService.instance.play('wrong.wav');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حاول مرة أخرى')));
+    if (answering) return;
+    setState(() => answering = true);
+    try {
+      if (value == answer) {
+        await SoundService.instance.play('pop.wav');
+        await ScoreService.instance.addStars(1);
+        if (!mounted) return;
+        setState(() => score++);
+        _round();
+      } else {
+        await SoundService.instance.play('wrong.wav');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حاول مرة أخرى')));
+      }
+    } finally {
+      if (mounted) setState(() => answering = false);
     }
   }
 
@@ -75,7 +83,7 @@ class _QuickMathPageState extends State<QuickMathPage> {
                 const SizedBox(height: 6),
                 Text('$a ${plus ? '+' : '-'} $b = ؟', style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 4),
-                Text('النقاط: $score', style: const TextStyle(color: Color(0xFFFFF7D6))),
+                Text(answering ? 'جارٍ التحقق...' : 'النقاط: $score', style: const TextStyle(color: Color(0xFFFFF7D6))),
               ]),
             ),
             const SizedBox(height: 10),
@@ -84,7 +92,7 @@ class _QuickMathPageState extends State<QuickMathPage> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: options.length,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 1.35),
-                itemBuilder: (BuildContext context, int index) => FilledButton.tonal(onPressed: () => _pick(options[index]), child: Text('${options[index]}', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900))),
+                itemBuilder: (BuildContext context, int index) => FilledButton.tonal(onPressed: answering ? null : () => _pick(options[index]), child: Text('${options[index]}', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900))),
               ),
             ),
           ],

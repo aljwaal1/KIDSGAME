@@ -15,6 +15,7 @@ import '../games/seven_stones_page.dart';
 import '../games/shape_shadow_page.dart';
 import '../games/smart_maze_page.dart';
 import '../services/score_service.dart';
+import '../services/sound_service.dart';
 import '../widgets/mascot_painter.dart';
 
 class HomeGamesPage extends StatefulWidget {
@@ -70,7 +71,10 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
           _SectionTabs(
             sections: sections,
             selected: section,
-            onSelect: (index) => setState(() => section = index),
+            onSelect: (index) {
+              SoundService.instance.play('click.wav');
+              setState(() => section = index);
+            },
           ),
           const SizedBox(height: 10),
           Row(
@@ -90,6 +94,7 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
   }
 
   void _open(Widget page) {
+    SoundService.instance.play('click.wav');
     Navigator.push(context, MaterialPageRoute<void>(builder: (_) => page));
   }
 }
@@ -231,10 +236,9 @@ class _StarsBadge extends StatelessWidget {
   const _StarsBadge();
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<int>(
-      future: ScoreService.instance.totalStars,
-      builder: (context, snapshot) {
-        final stars = snapshot.data ?? 0;
+    return ValueListenableBuilder<int>(
+      valueListenable: ScoreService.instance.totalStarsNotifier,
+      builder: (context, stars, _) {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(color: const Color(0x2EFFFFFF), borderRadius: BorderRadius.circular(999), border: Border.all(color: const Color(0x66FFFFFF))),

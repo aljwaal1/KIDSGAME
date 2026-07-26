@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,35 +24,48 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
   int mistakes = 0;
   int streak = 0;
   int? bestStreak;
+  bool transitioning = false;
+  Timer? _roundTimer;
   final GlobalKey<ConfettiOverlayState> confettiKey = GlobalKey<ConfettiOverlayState>();
 
   @override
   void initState() { super.initState(); driftController = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200))..repeat(reverse: true); createRound(resetScore: true); _loadBest(); }
   Future<void> _loadBest() async { final value = await ScoreService.instance.getBestStreak('bubbles'); if (mounted) setState(() => bestStreak = value); }
   @override
-  void dispose() { driftController.dispose(); super.dispose(); }
+  void dispose() { _roundTimer?.cancel(); driftController.dispose(); super.dispose(); }
 
   void createRound({bool resetScore = false}) {
     target = _arabicLetters[random.nextInt(_arabicLetters.length)];
     final count = (3 + (score ~/ 5)).clamp(3, 6).toInt();
     bubbles = List<String>.generate(count, (_) => _arabicLetters[random.nextInt(_arabicLetters.length)]);
     bubbles[random.nextInt(count)] = target;
+    transitioning = false;
     if (resetScore) { score = 0; mistakes = 0; streak = 0; }
   }
-  void newRound({bool resetScore = false}) { createRound(resetScore: resetScore); setState(() {}); }
+
+  void newRound({bool resetScore = false}) {
+    _roundTimer?.cancel();
+    createRound(resetScore: resetScore);
+    setState(() {});
+  }
 
   void pop(int index) {
+    if (transitioning) return;
     var next = false;
     setState(() {
       if (bubbles[index] == target) {
         SoundService.instance.play('pop.wav'); HapticFeedback.lightImpact(); score++; streak++; bubbles[index] = '';
-        if (!bubbles.contains(target)) next = true;
+        if (!bubbles.contains(target)) {
+          next = true;
+          transitioning = true;
+        }
       } else { SoundService.instance.play('wrong.wav'); HapticFeedback.lightImpact(); mistakes++; streak = 0; }
     });
     if (next) {
+      final completedStreak = streak;
       SoundService.instance.play('chime.wav'); confettiKey.currentState?.burst(count: 16); ScoreService.instance.addStars(1);
-      ScoreService.instance.reportStreak('bubbles', streak).then((ok) { if (ok && mounted) setState(() => bestStreak = streak); });
-      Future<void>.delayed(const Duration(milliseconds: 280), () { if (mounted) newRound(); });
+      ScoreService.instance.reportStreak('bubbles', completedStreak).then((ok) { if (ok && mounted) setState(() => bestStreak = completedStreak); });
+      _roundTimer = Timer(const Duration(milliseconds: 320), () { if (mounted) newRound(); });
     }
   }
 
@@ -64,7 +78,7 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
         child: Column(
           children: <Widget>[
-            GameHeader(title: 'فقاعات الحروف', subtitle: 'النقاط: $score  •  متتالية: $streak$bestText', color: const Color(0xFF06B6D4), onReset: () => newRound(resetScore: true)),
+            GameHeader(title: 'فقاعات الحروف', subtitle: transitioning ? 'أحسنت! الجولة التالية...' : 'النقاط: $score  •  متتالية: $streak$bestText', color: const Color(0xFF06B6D4), onReset: () => newRound(resetScore: true)),
             const SizedBox(height: 8),
             Container(
               height: 116,
@@ -95,10 +109,10 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
                       offset: Offset(offset, 0),
                       child: AnimatedOpacity(
                         duration: const Duration(milliseconds: 180),
-                        opacity: hidden ? 0.12 : 1,
+                        opacity: hidden || transitioning ? 0.35 : 1,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(999),
-                          onTap: hidden ? null : () => pop(index),
+                          onTap: hidden || transitioning ? null : () => pop(index),
                           child: Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,

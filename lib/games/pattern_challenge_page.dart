@@ -16,6 +16,7 @@ class _PatternChallengePageState extends State<PatternChallengePage> {
   late List<_PatternShape> pattern;
   late _PatternShape answer;
   late List<_PatternShape> choices;
+  bool answering = false;
 
   final List<_PatternShape> shapes = const <_PatternShape>[
     _PatternShape(Icons.circle_rounded, Color(0xFFEF4444), 'دائرة'),
@@ -32,7 +33,8 @@ class _PatternChallengePageState extends State<PatternChallengePage> {
 
   void _round() {
     final a = shapes[_random.nextInt(shapes.length)];
-    final _PatternShape b = shapes.where((_PatternShape s) => s.name != a.name).toList()[_random.nextInt(shapes.length - 1)];
+    final alternatives = shapes.where((_PatternShape s) => s.name != a.name).toList();
+    final b = alternatives[_random.nextInt(alternatives.length)];
     pattern = <_PatternShape>[a, b, a, b, a];
     answer = b;
     choices = List<_PatternShape>.from(shapes)..shuffle(_random);
@@ -40,16 +42,23 @@ class _PatternChallengePageState extends State<PatternChallengePage> {
   }
 
   Future<void> _pick(_PatternShape item) async {
-    if (item.name == answer.name) {
-      await ScoreService.instance.addStars(2);
-      await SoundService.instance.play('chime.wav');
-      if (!mounted) return;
-      setState(() => score++);
-      _round();
-    } else {
-      await SoundService.instance.play('wrong.wav');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('انظر للنمط مرة أخرى')));
+    if (answering) return;
+    setState(() => answering = true);
+    try {
+      if (item.name == answer.name) {
+        await ScoreService.instance.addStars(2);
+        await SoundService.instance.play('chime.wav');
+        if (!mounted) return;
+        setState(() => score++);
+        _round();
+      } else {
+        await SoundService.instance.play('wrong.wav');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('انظر للنمط مرة أخرى')));
+      }
+    } finally {
+      if (mounted) setState(() => answering = false);
     }
   }
 
@@ -76,14 +85,24 @@ class _PatternChallengePageState extends State<PatternChallengePage> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text('اختر الشكل الذي يكمل السلسلة', style: TextStyle(color: Color(0xFF64748B))),
+            Text(answering ? 'جارٍ التحقق...' : 'اختر الشكل الذي يكمل السلسلة', style: const TextStyle(color: Color(0xFF64748B))),
             const SizedBox(height: 8),
             Expanded(
               child: GridView.builder(
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: choices.length,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10),
-                itemBuilder: (BuildContext context, int index) => Card(child: InkWell(borderRadius: BorderRadius.circular(24), onTap: () => _pick(choices[index]), child: Center(child: _ShapeBubble(shape: choices[index], size: 66)))),
+                itemBuilder: (BuildContext context, int index) => Card(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(24),
+                    onTap: answering ? null : () => _pick(choices[index]),
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 150),
+                      opacity: answering ? 0.72 : 1,
+                      child: Center(child: _ShapeBubble(shape: choices[index], size: 66)),
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
