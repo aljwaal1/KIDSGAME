@@ -6,12 +6,16 @@ import 'games/sliding_puzzle_page.dart';
 import 'games/tic_tac_toe_page.dart';
 import 'screens/developer_page.dart';
 import 'screens/home_page.dart';
+import 'services/score_service.dart';
 import 'services/sound_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SoundService.instance.init();
+  await Future.wait(<Future<void>>[
+    SoundService.instance.init(),
+    ScoreService.instance.init(),
+  ]);
   runApp(const KidsGamesArenaApp());
 }
 
@@ -88,7 +92,7 @@ class _GamesHomeState extends State<GamesHome> {
           NavigationDestination(icon: Icon(Icons.grid_3x3_outlined), selectedIcon: Icon(Icons.grid_3x3_rounded), label: 'إكس أو'),
           NavigationDestination(icon: Icon(Icons.extension_outlined), selectedIcon: Icon(Icons.extension_rounded), label: 'البزل'),
           NavigationDestination(icon: Icon(Icons.bubble_chart_outlined), selectedIcon: Icon(Icons.bubble_chart_rounded), label: 'الحروف'),
-          NavigationDestination(icon: Icon(Icons.mail_outline_rounded), selectedIcon: Icon(Icons.mail_rounded), label: 'المطور'),
+          NavigationDestination(icon: Icon(Icons.build_outlined), selectedIcon: Icon(Icons.build_rounded), label: 'الفحص'),
         ],
       ),
     );
