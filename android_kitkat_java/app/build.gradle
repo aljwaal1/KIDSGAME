@@ -3,11 +3,19 @@ plugins { id 'com.android.application' }
 android {
     namespace 'com.explapp.kidsgame.legacy'
     compileSdk 34
+
     defaultConfig {
         applicationId 'com.explapp.kidsgame.legacy'
         minSdk 19
         targetSdk 34
         versionCode 2
         versionName '1.1-legacy'
+    }
+
+    buildTypes {
+        release {
+            // Test distribution only. Replace with a private production key before store publishing.
+            signingConfig signingConfigs.debug
+        }
     }
 }
