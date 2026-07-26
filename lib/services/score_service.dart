@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ScoreService {
@@ -5,17 +8,32 @@ class ScoreService {
   static final ScoreService instance = ScoreService._();
 
   static const String _starsKey = 'total_stars';
+  final ValueNotifier<int> starsNotifier = ValueNotifier<int>(0);
+  Future<void> _writeQueue = Future<void>.value();
+  bool _initialized = false;
 
-  Future<int> get totalStars async {
+  Future<void> init() async {
+    if (_initialized) return;
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_starsKey) ?? 0;
+    starsNotifier.value = prefs.getInt(_starsKey) ?? 0;
+    _initialized = true;
   }
 
-  Future<void> addStars(int count) async {
-    if (count <= 0) return;
-    final prefs = await SharedPreferences.getInstance();
-    final current = prefs.getInt(_starsKey) ?? 0;
-    await prefs.setInt(_starsKey, current + count);
+  Future<int> get totalStars async {
+    await init();
+    return starsNotifier.value;
+  }
+
+  Future<void> addStars(int count) {
+    if (count <= 0) return Future<void>.value();
+    _writeQueue = _writeQueue.then((_) async {
+      await init();
+      final next = starsNotifier.value + count;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_starsKey, next);
+      starsNotifier.value = next;
+    });
+    return _writeQueue;
   }
 
   Future<int?> getBestMoves(String key) async {
@@ -51,6 +69,7 @@ class ScoreService {
   }
 
   Future<void> resetProgress() async {
+    await _writeQueue;
     final prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys().where((String key) {
       return key == _starsKey || key.startsWith('best_moves_') || key.startsWith('best_streak_');
@@ -58,5 +77,6 @@ class ScoreService {
     for (final key in keys) {
       await prefs.remove(key);
     }
+    starsNotifier.value = 0;
   }
 }
