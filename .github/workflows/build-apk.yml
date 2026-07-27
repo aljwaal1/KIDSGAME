@@ -50,13 +50,7 @@ jobs:
           rm -f test/widget_test.dart
 
       - name: Get packages
-        shell: bash
-        run: |
-          if [ -f pubspec.lock ]; then
-            flutter pub get --enforce-lockfile
-          else
-            flutter pub get
-          fi
+        run: flutter pub get
 
       - name: Set Android package and app name
         run: |
