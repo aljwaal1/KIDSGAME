@@ -16,6 +16,7 @@ import '../games/shape_shadow_page.dart';
 import '../games/smart_maze_page.dart';
 import '../services/score_service.dart';
 import '../widgets/mascot_painter.dart';
+import '../widgets/sound_level_button.dart';
 
 class HomeGamesPage extends StatefulWidget {
   const HomeGamesPage({super.key, required this.onSelectGame});
@@ -90,7 +91,15 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
   }
 
   void _open(Widget page) {
-    Navigator.push(context, MaterialPageRoute<void>(builder: (_) => page));
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: SoundLevelOverlay(child: page),
+        ),
+      ),
+    );
   }
 }
 
