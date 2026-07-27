@@ -7,6 +7,7 @@ on:
       - 'lib/**'
       - 'assets/**'
       - 'pubspec.yaml'
+      - 'pubspec.lock'
       - '.github/workflows/build-apk.yml'
   pull_request:
     branches: [ main ]
@@ -14,6 +15,7 @@ on:
       - 'lib/**'
       - 'assets/**'
       - 'pubspec.yaml'
+      - 'pubspec.lock'
       - '.github/workflows/build-apk.yml'
   workflow_dispatch:
 
@@ -88,7 +90,29 @@ jobs:
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Build release APK
-        run: flutter build apk --release --no-tree-shake-icons
+        shell: bash
+        run: |
+          set +e
+          flutter build apk --release --no-tree-shake-icons > build-apk.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "===== APK build failure (last 160 lines) ====="
+            tail -n 160 build-apk.log
+          else
+            cat build-apk.log
+          fi
+          exit "$status"
+
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kidsgame-modern-build-diagnostics
+          path: |
+            build-apk.log
+            pubspec.lock
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -109,11 +133,11 @@ jobs:
           https://github.com/aljwaal1/KIDSGAME/raw/main/apk/modern/kidsgame.apk
           EOF
 
-      - name: Commit APK
+      - name: Commit APK and lockfile
         if: github.event_name != 'pull_request'
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add apk/modern/kidsgame.apk DOWNLOAD_APK.md
-          git commit -m "Update APK" || echo "No changes"
+          git add apk/modern/kidsgame.apk DOWNLOAD_APK.md pubspec.lock
+          git commit -m "Update APK and dependencies" || echo "No changes"
           git push || true

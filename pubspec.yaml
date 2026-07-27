@@ -15,6 +15,10 @@ dependencies:
   audioplayers: ^6.1.0
   shared_preferences: ^2.3.2
 
+dependency_overrides:
+  # jni 1.0.1 currently fails while evaluating its Android Gradle script.
+  jni: 1.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
