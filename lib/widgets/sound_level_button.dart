@@ -42,7 +42,7 @@ class SoundLevelButton extends StatelessWidget {
         return PopupMenuButton<SoundLevel>(
           tooltip: 'مستوى الصوت: $label',
           initialValue: level,
-          onSelected: SoundService.instance.setLevel,
+          onSelected: (selected) => SoundService.instance.setLevel(selected),
           itemBuilder: (context) => <PopupMenuEntry<SoundLevel>>[
             for (final option in SoundLevel.values)
               PopupMenuItem<SoundLevel>(
