@@ -50,7 +50,13 @@ jobs:
           rm -f test/widget_test.dart
 
       - name: Get packages
-        run: flutter pub get
+        shell: bash
+        run: |
+          if [ -f pubspec.lock ]; then
+            flutter pub get --enforce-lockfile
+          else
+            flutter pub get
+          fi
 
       - name: Set Android package and app name
         run: |
@@ -133,11 +139,11 @@ jobs:
           https://github.com/aljwaal1/KIDSGAME/raw/main/apk/modern/kidsgame.apk
           EOF
 
-      - name: Commit APK
+      - name: Commit APK and lockfile
         if: github.event_name != 'pull_request'
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add apk/modern/kidsgame.apk DOWNLOAD_APK.md
-          git commit -m "Update APK" || echo "No changes"
+          git add apk/modern/kidsgame.apk DOWNLOAD_APK.md pubspec.lock
+          git commit -m "Update APK and dependencies" || echo "No changes"
           git push || true
