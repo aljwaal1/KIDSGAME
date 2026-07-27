@@ -9,6 +9,7 @@ import 'screens/home_page.dart';
 import 'services/score_service.dart';
 import 'services/sound_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/sound_level_button.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,17 +71,9 @@ class _GamesHomeState extends State<GamesHome> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ملعب الأطفال'),
-        actions: <Widget>[
-          ValueListenableBuilder<bool>(
-            valueListenable: SoundService.instance.mutedNotifier,
-            builder: (context, muted, _) {
-              return IconButton(
-                tooltip: muted ? 'تشغيل الصوت' : 'كتم الصوت',
-                icon: Icon(muted ? Icons.volume_off_rounded : Icons.volume_up_rounded),
-                onPressed: () => SoundService.instance.toggleMute(),
-              );
-            },
-          ),
+        actions: const <Widget>[
+          SoundLevelButton(),
+          SizedBox(width: 4),
         ],
       ),
       body: pages[tab],
