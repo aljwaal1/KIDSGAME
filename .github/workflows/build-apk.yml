@@ -7,6 +7,7 @@ on:
       - 'lib/**'
       - 'assets/**'
       - 'pubspec.yaml'
+      - 'pubspec.lock'
       - '.github/workflows/build-apk.yml'
   pull_request:
     branches: [ main ]
@@ -14,6 +15,7 @@ on:
       - 'lib/**'
       - 'assets/**'
       - 'pubspec.yaml'
+      - 'pubspec.lock'
       - '.github/workflows/build-apk.yml'
   workflow_dispatch:
 
@@ -101,12 +103,14 @@ jobs:
           fi
           exit "$status"
 
-      - name: Upload build log
+      - name: Upload build diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kidsgame-modern-build-log
-          path: build-apk.log
+          name: kidsgame-modern-build-diagnostics
+          path: |
+            build-apk.log
+            pubspec.lock
           if-no-files-found: warn
           retention-days: 7
 
