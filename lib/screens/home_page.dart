@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../games/capital_letter_coloring_page.dart';
+import '../games/animal_picture_puzzle_page.dart';
 import '../games/dahdel_page.dart';
 import '../games/memory_pairs_page.dart';
 import '../games/mini_sudoku_page.dart';
@@ -35,6 +36,7 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
       _GameSection('الأساسية', const Color(0xFF6D28D9), <_GameItem>[
         _GameItem(Icons.grid_3x3_rounded, 'إكس أو', 'صديق أو كمبيوتر', const Color(0xFF6D28D9), () => widget.onSelectGame(1)),
         _GameItem(Icons.extension_rounded, 'بزل الأرقام', '3×3 و 4×4', const Color(0xFFF97316), () => widget.onSelectGame(2)),
+        _GameItem(Icons.photo_library_rounded, 'بازل الحيوانات', 'دب، قط، وأسد', const Color(0xFF10B981), () => _open(const AnimalPicturePuzzlePage())),
         _GameItem(Icons.bubble_chart_rounded, 'فقاعات الحروف', 'التقط الحرف', const Color(0xFF06B6D4), () => widget.onSelectGame(3)),
       ]),
       _GameSection('الذكاء', const Color(0xFF0EA5E9), <_GameItem>[
