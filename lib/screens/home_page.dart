@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../games/capital_letter_coloring_page.dart';
 import '../games/animal_picture_puzzle_page.dart';
+import '../games/connect_four_page.dart';
 import '../games/dahdel_page.dart';
+import '../games/dots_and_boxes_page.dart';
 import '../games/memory_pairs_page.dart';
 import '../games/mini_sudoku_page.dart';
 import '../games/odd_one_out_page.dart';
@@ -15,6 +17,7 @@ import '../games/sequence_order_page.dart';
 import '../games/seven_stones_page.dart';
 import '../games/shape_shadow_page.dart';
 import '../games/smart_maze_page.dart';
+import '../games/snakes_and_ladders_page.dart';
 import '../services/score_service.dart';
 import '../widgets/mascot_painter.dart';
 import '../widgets/sound_level_button.dart';
@@ -53,6 +56,11 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
       ]),
       _GameSection('التعليم', const Color(0xFF4F46E5), <_GameItem>[
         _GameItem(Icons.draw_rounded, 'تلوين الحروف الكبيرة', 'اتبع السهم', const Color(0xFF4F46E5), () => _open(const CapitalLetterColoringPage())),
+      ]),
+      _GameSection('جماعية', const Color(0xFF7C3AED), <_GameItem>[
+        _GameItem(Icons.gesture_rounded, 'النقاط والمربعات', 'أصدقاء أو روبوت', const Color(0xFF7C3AED), () => _open(const DotsAndBoxesPage())),
+        _GameItem(Icons.view_column_rounded, 'أربع قطع في صف', 'صديق أو روبوت', const Color(0xFF2563EB), () => _open(const ConnectFourPage())),
+        _GameItem(Icons.casino_rounded, 'السلم والثعبان', 'أصدقاء أو روبوت', const Color(0xFF16A34A), () => _open(const SnakesAndLaddersPage())),
       ]),
       _GameSection('تراث', const Color(0xFFB45309), <_GameItem>[
         _GameItem(Icons.scatter_plot_rounded, 'الحَرّة بالحصى', 'ثلاث حصوات على خط', const Color(0xFFB45309), () => _open(const PebbleHarraPage())),
