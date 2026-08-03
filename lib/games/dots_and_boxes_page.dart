@@ -24,7 +24,7 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
   int playerCount = 2, player = 0;
   bool botMode = false;
   bool finished = false;
-  late List<bool> h, v;
+  late List<int> h, v;
   late List<int> owners, scores;
 
   @override
@@ -32,8 +32,8 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
 
   void _reset() {
     botTimer?.cancel();
-    h = List<bool>.filled((n + 1) * n, false);
-    v = List<bool>.filled(n * (n + 1), false);
+    h = List<int>.filled((n + 1) * n, -1);
+    v = List<int>.filled(n * (n + 1), -1);
     owners = List<int>.filled(n * n, -1);
     scores = List<int>.filled(playerCount, 0);
     setState(() { player = 0; finished = false; });
@@ -43,6 +43,7 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
     if (botMode == value) return;
     SoundService.instance.play('click.wav');
     botMode = value;
+    if (value) playerCount = 2;
     _reset();
   }
 
@@ -67,16 +68,16 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
 
   void _claim(bool horizontal, int index) {
     final edges = horizontal ? h : v;
-    if (edges[index]) return;
+    if (edges[index] >= 0) return;
     SoundService.instance.play('tap.wav');
     HapticFeedback.selectionClick();
     setState(() {
-      edges[index] = true;
+      edges[index] = player;
       var won = 0;
       for (var r = 0; r < n; r++) {
         for (var c = 0; c < n; c++) {
           final i = r * n + c;
-          if (owners[i] < 0 && h[r * n + c] && h[(r + 1) * n + c] && v[r * (n + 1) + c] && v[r * (n + 1) + c + 1]) {
+          if (owners[i] < 0 && h[r * n + c] >= 0 && h[(r + 1) * n + c] >= 0 && v[r * (n + 1) + c] >= 0 && v[r * (n + 1) + c + 1] >= 0) {
             owners[i] = player;
             scores[player]++;
             won++;
@@ -106,8 +107,8 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
     botTimer = Timer(const Duration(milliseconds: 650), () {
       if (!mounted || finished || player == 0) return;
       final choices = <({bool horizontal, int index, int gain})>[];
-      for (var i = 0; i < h.length; i++) if (!h[i]) choices.add((horizontal: true, index: i, gain: _edgeGain(true, i)));
-      for (var i = 0; i < v.length; i++) if (!v[i]) choices.add((horizontal: false, index: i, gain: _edgeGain(false, i)));
+      for (var i = 0; i < h.length; i++) if (h[i] < 0) choices.add((horizontal: true, index: i, gain: _edgeGain(true, i)));
+      for (var i = 0; i < v.length; i++) if (v[i] < 0) choices.add((horizontal: false, index: i, gain: _edgeGain(false, i)));
       if (choices.isEmpty) return;
       final bestGain = choices.map((x) => x.gain).reduce(max);
       final best = choices.where((x) => x.gain == bestGain).toList();
@@ -118,13 +119,13 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
 
   int _edgeGain(bool horizontal, int index) {
     final edges = horizontal ? h : v;
-    edges[index] = true;
+    edges[index] = player;
     var gain = 0;
     for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) {
       final i = r * n + c;
-      if (owners[i] < 0 && h[r * n + c] && h[(r + 1) * n + c] && v[r * (n + 1) + c] && v[r * (n + 1) + c + 1]) gain++;
+      if (owners[i] < 0 && h[r * n + c] >= 0 && h[(r + 1) * n + c] >= 0 && v[r * (n + 1) + c] >= 0 && v[r * (n + 1) + c + 1] >= 0) gain++;
     }
-    edges[index] = false;
+    edges[index] = -1;
     return gain;
   }
 
@@ -154,21 +155,46 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
               const SizedBox(width: 8),
               Expanded(child: ChoiceChip(label: const Text('ضد الروبوت'), selected: botMode, onSelected: (_) => _setBotMode(true))),
             ]),
-            const SizedBox(height: 6),
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-              const Text('اللاعبون', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
-              const SizedBox(width: 6),
-              for (var count = 2; count <= 4; count++) Padding(
-                padding: const EdgeInsetsDirectional.only(start: 4),
-                child: ChoiceChip(
-                  visualDensity: VisualDensity.compact,
-                  label: Text('$count'),
-                  selected: playerCount == count,
-                  onSelected: (_) => _setPlayers(count),
+            if (!botMode) ...<Widget>[
+              const SizedBox(height: 6),
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+                const Text('عدد اللاعبين', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+                const SizedBox(width: 6),
+                for (var count = 2; count <= 4; count++) Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 4),
+                  child: ChoiceChip(
+                    visualDensity: VisualDensity.compact,
+                    label: Text('$count'),
+                    selected: playerCount == count,
+                    onSelected: (_) => _setPlayers(count),
+                  ),
                 ),
+              ]),
+            ],
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: colors[player].withAlpha(28),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: colors[player], width: 2),
+              ),
+              child: Row(children: <Widget>[
+                Container(width: 14, height: 14, decoration: BoxDecoration(color: colors[player], shape: BoxShape.circle)),
+                const SizedBox(width: 8),
+                Expanded(child: Text(botMode && player > 0 ? 'الروبوت يفكر الآن…' : 'الآن دور اللاعب ${player + 1} — اختر خطاً', style: TextStyle(color: colors[player], fontWeight: FontWeight.w900))),
+              ]),
+            ),
+            const SizedBox(height: 7),
+            Wrap(spacing: 7, runSpacing: 5, alignment: WrapAlignment.center, children: <Widget>[
+              for (var i = 0; i < playerCount; i++) Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(color: colors[i].withAlpha(player == i && !finished ? 45 : 18), borderRadius: BorderRadius.circular(13), border: Border.all(color: colors[i], width: player == i && !finished ? 2.5 : 1)),
+                child: Text('${botMode && i > 0 ? 'الروبوت' : 'اللاعب ${i + 1}'}: ${scores[i]} مربع', style: TextStyle(color: colors[i], fontWeight: FontWeight.w900, fontSize: 12)),
               ),
             ]),
-            const SizedBox(height: 10),
+            const SizedBox(height: 9),
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -180,31 +206,36 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
               child: SizedBox(
                 width: boardSize,
                 height: boardSize,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTapDown: (details) => _tap(details, Size.square(boardSize)),
-                  child: CustomPaint(size: Size.square(boardSize), painter: _DotsPainter(h, v, owners)),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTapDown: (details) => _tap(details, Size.square(boardSize)),
+                      child: CustomPaint(size: Size.square(boardSize), painter: _DotsPainter(h, v, owners)),
+                    ),
+                    if (h.every((edge) => edge < 0) && v.every((edge) => edge < 0))
+                      IgnorePointer(
+                        child: Align(
+                          alignment: const Alignment(0, -0.82),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(color: const Color(0xEFFFFFFF), borderRadius: BorderRadius.circular(99), boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x33000000), blurRadius: 8)]),
+                            child: const Row(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                              Icon(Icons.touch_app_rounded, color: Color(0xFF7C3AED), size: 18),
+                              SizedBox(width: 5),
+                              Text('ابدأ بلمس خط رمادي', style: TextStyle(color: Color(0xFF4C1D95), fontWeight: FontWeight.w900, fontSize: 12)),
+                            ]),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
             const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(16)),
-              child: const Row(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                Icon(Icons.touch_app_rounded, color: Color(0xFF7C3AED), size: 20),
-                SizedBox(width: 6),
-                Flexible(child: Text('اضغط بين نقطتين لرسم خط، وأغلق مربعًا لتحصل على نقطة', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF4C1D95), fontWeight: FontWeight.w800, fontSize: 12))),
-              ]),
-            ),
-            const SizedBox(height: 9),
-            Wrap(spacing: 7, runSpacing: 5, alignment: WrapAlignment.center, children: <Widget>[
-              for (var i = 0; i < playerCount; i++) Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(color: colors[i].withAlpha(player == i && !finished ? 45 : 18), borderRadius: BorderRadius.circular(13), border: Border.all(color: colors[i], width: player == i && !finished ? 2.5 : 1)),
-                child: Text('${botMode && i > 0 ? 'الروبوت' : 'اللاعب ${i + 1}'}: ${scores[i]}', style: TextStyle(color: colors[i], fontWeight: FontWeight.w900, fontSize: 13)),
-              ),
-            ]),
+            const _HowToPlayDots(),
+            const SizedBox(height: 8),
           ]),
         );
       }),
@@ -214,7 +245,7 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
 
 class _DotsPainter extends CustomPainter {
   const _DotsPainter(this.h, this.v, this.owners);
-  final List<bool> h, v;
+  final List<int> h, v;
   final List<int> owners;
   static const colors = <Color>[Color(0xFFEF4444), Color(0xFF2563EB), Color(0xFF16A34A), Color(0xFFF59E0B)];
   @override
@@ -226,12 +257,59 @@ class _DotsPainter extends CustomPainter {
       final owner = owners[r * n + c];
       if (owner >= 0) canvas.drawRect(Rect.fromLTWH(c * cell + 5, r * cell + 5, cell - 10, cell - 10), Paint()..color = colors[owner].withAlpha(55));
     }
-    final line = Paint()..color = const Color(0xFF334155)..strokeWidth = 8..strokeCap = StrokeCap.round;
-    for (var r = 0; r <= n; r++) for (var c = 0; c < n; c++) if (h[r * n + c]) canvas.drawLine(Offset(c * cell, r * cell), Offset((c + 1) * cell, r * cell), line);
-    for (var r = 0; r < n; r++) for (var c = 0; c <= n; c++) if (v[r * (n + 1) + c]) canvas.drawLine(Offset(c * cell, r * cell), Offset(c * cell, (r + 1) * cell), line);
+    final guide = Paint()..color = const Color(0xFFCBD5E1)..strokeWidth = 3..strokeCap = StrokeCap.round;
+    for (var r = 0; r <= n; r++) for (var c = 0; c < n; c++) canvas.drawLine(Offset(c * cell + 13, r * cell), Offset((c + 1) * cell - 13, r * cell), guide);
+    for (var r = 0; r < n; r++) for (var c = 0; c <= n; c++) canvas.drawLine(Offset(c * cell, r * cell + 13), Offset(c * cell, (r + 1) * cell - 13), guide);
+    final line = Paint()..strokeWidth = 9..strokeCap = StrokeCap.round;
+    for (var r = 0; r <= n; r++) for (var c = 0; c < n; c++) {
+      final owner = h[r * n + c];
+      if (owner >= 0) canvas.drawLine(Offset(c * cell, r * cell), Offset((c + 1) * cell, r * cell), line..color = colors[owner]);
+    }
+    for (var r = 0; r < n; r++) for (var c = 0; c <= n; c++) {
+      final owner = v[r * (n + 1) + c];
+      if (owner >= 0) canvas.drawLine(Offset(c * cell, r * cell), Offset(c * cell, (r + 1) * cell), line..color = colors[owner]);
+    }
     final dot = Paint()..color = const Color(0xFF0F172A);
     for (var r = 0; r <= n; r++) for (var c = 0; c <= n; c++) canvas.drawCircle(Offset(c * cell, r * cell), 8, dot);
   }
   @override
   bool shouldRepaint(covariant _DotsPainter oldDelegate) => true;
+}
+
+class _HowToPlayDots extends StatelessWidget {
+  const _HowToPlayDots();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+      decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(16)),
+      child: const Row(children: <Widget>[
+        Expanded(child: _DotRule(icon: Icons.touch_app_rounded, number: '1', text: 'المس خطاً')),
+        Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFFA78BFA), size: 13),
+        Expanded(child: _DotRule(icon: Icons.crop_square_rounded, number: '2', text: 'أغلق مربعاً')),
+        Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFFA78BFA), size: 13),
+        Expanded(child: _DotRule(icon: Icons.emoji_events_rounded, number: '3', text: 'اجمع الأكثر')),
+      ]),
+    );
+  }
+}
+
+class _DotRule extends StatelessWidget {
+  const _DotRule({required this.icon, required this.number, required this.text});
+  final IconData icon;
+  final String number;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+      Row(mainAxisSize: MainAxisSize.min, children: <Widget>[
+        Text(number, style: const TextStyle(color: Color(0xFF7C3AED), fontWeight: FontWeight.w900)),
+        const SizedBox(width: 3),
+        Icon(icon, color: const Color(0xFF7C3AED), size: 18),
+      ]),
+      Text(text, maxLines: 1, style: const TextStyle(color: Color(0xFF4C1D95), fontWeight: FontWeight.w800, fontSize: 11)),
+    ]);
+  }
 }

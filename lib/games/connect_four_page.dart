@@ -23,6 +23,7 @@ class _ConnectFourPageState extends State<ConnectFourPage> {
   Timer? botTimer;
   late List<int> board;
   int player = 0;
+  int selectedColumn = 3;
   bool botMode = false;
   int? winner;
   bool draw = false;
@@ -32,7 +33,7 @@ class _ConnectFourPageState extends State<ConnectFourPage> {
   void _reset() {
     botTimer?.cancel();
     board = List<int>.filled(rows * columns, -1);
-    setState(() { player = 0; winner = null; draw = false; });
+    setState(() { player = 0; selectedColumn = 3; winner = null; draw = false; });
   }
 
   void _setBotMode(bool value) {
@@ -50,6 +51,7 @@ class _ConnectFourPageState extends State<ConnectFourPage> {
     SoundService.instance.play('move.wav');
     HapticFeedback.lightImpact();
     setState(() {
+      selectedColumn = column;
       board[row * columns + column] = player;
       if (_won(row, column, player)) {
         winner = player;
@@ -111,50 +113,177 @@ class _ConnectFourPageState extends State<ConnectFourPage> {
   void dispose() { botTimer?.cancel(); super.dispose(); }
 
   @override
-  Widget build(BuildContext context) => ConfettiOverlay(
-    key: confettiKey,
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-      child: Column(children: <Widget>[
-        GameHeader(title: 'أربع قطع في صف', subtitle: message, color: const Color(0xFF2563EB), onReset: _reset),
-        const SizedBox(height: 10),
-        Row(children: <Widget>[
-          Expanded(child: ChoiceChip(label: const Text('مع صديق'), selected: !botMode, onSelected: (_) => _setBotMode(false))),
-          const SizedBox(width: 8),
-          Expanded(child: ChoiceChip(label: const Text('ضد الروبوت'), selected: botMode, onSelected: (_) => _setBotMode(true))),
-        ]),
-        const SizedBox(height: 8),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-          _Badge(number: 1, color: colors[0], active: player == 0 && winner == null && !draw),
-          const SizedBox(width: 16),
-          _Badge(number: 2, color: colors[1], active: player == 1 && winner == null && !draw, robot: botMode),
-        ]),
-        const SizedBox(height: 12),
-        Expanded(child: Center(child: AspectRatio(
-          aspectRatio: columns / rows,
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: const Color(0xFF1D4ED8), borderRadius: BorderRadius.circular(24), boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x442563EB), blurRadius: 16, offset: Offset(0, 8))]),
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: columns),
-              itemCount: rows * columns,
-              itemBuilder: (context, index) {
-                final value = board[index];
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => _drop(index % columns),
-                  child: Padding(padding: const EdgeInsets.all(3), child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: value < 0 ? const Color(0xFFF8FAFC) : colors[value], boxShadow: value < 0 ? null : const <BoxShadow>[BoxShadow(color: Color(0x44000000), blurRadius: 5, offset: Offset(0, 3))]),
-                  )),
-                );
-              },
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+      data: media.copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: ConfettiOverlay(
+        key: confettiKey,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+          child: Column(children: <Widget>[
+            GameHeader(title: 'أربع قطع في صف', subtitle: message, color: const Color(0xFF2563EB), onReset: _reset),
+            const SizedBox(height: 7),
+            Row(children: <Widget>[
+              Expanded(child: _ModeButton(label: 'مع صديق', icon: Icons.people_alt_rounded, selected: !botMode, onTap: () => _setBotMode(false))),
+              const SizedBox(width: 7),
+              Expanded(child: _ModeButton(label: 'ضد الروبوت', icon: Icons.smart_toy_rounded, selected: botMode, onTap: () => _setBotMode(true))),
+            ]),
+            const SizedBox(height: 7),
+            Row(children: <Widget>[
+              Expanded(child: _Badge(number: 1, color: colors[0], active: player == 0 && winner == null && !draw)),
+              const SizedBox(width: 7),
+              Expanded(child: _Badge(number: 2, color: colors[1], active: player == 1 && winner == null && !draw, robot: botMode)),
+            ]),
+            const SizedBox(height: 7),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final maximumBoardWidth = min(
+                    constraints.maxWidth,
+                    (constraints.maxHeight - 39) * columns / rows,
+                  ).toDouble();
+                  return Center(
+                    child: SizedBox(
+                      width: maximumBoardWidth,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          SizedBox(
+                            height: 34,
+                            child: Row(
+                              children: <Widget>[
+                                for (var column = 0; column < columns; column++)
+                                  Expanded(
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: () => _drop(column),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 160),
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: selectedColumn == column ? colors[player].withAlpha(45) : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Icon(
+                                          Icons.arrow_drop_down_rounded,
+                                          color: selectedColumn == column ? colors[player] : const Color(0xFF94A3B8),
+                                          size: selectedColumn == column ? 32 : 25,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          AspectRatio(
+                            aspectRatio: columns / rows,
+                            child: Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: <Color>[Color(0xFF3B82F6), Color(0xFF1D4ED8), Color(0xFF1E40AF)],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                                borderRadius: BorderRadius.circular(22),
+                                border: Border.all(color: const Color(0xFF60A5FA), width: 3),
+                                boxShadow: const <BoxShadow>[
+                                  BoxShadow(color: Color(0x552563EB), blurRadius: 18, offset: Offset(0, 9)),
+                                ],
+                              ),
+                              child: GridView.builder(
+                                padding: EdgeInsets.zero,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: columns),
+                                itemCount: rows * columns,
+                                itemBuilder: (context, index) {
+                                  final value = board[index];
+                                  return GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () => _drop(index % columns),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(2.5),
+                                      child: Container(
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Color(0xFF0F2E78),
+                                          boxShadow: <BoxShadow>[
+                                            BoxShadow(color: Color(0x99000000), blurRadius: 4, offset: Offset(0, 2)),
+                                          ],
+                                        ),
+                                        padding: const EdgeInsets.all(3),
+                                        child: value < 0
+                                            ? const DecoratedBox(decoration: BoxDecoration(shape: BoxShape.circle, color: Color(0xFFF1F5F9)))
+                                            : TweenAnimationBuilder<double>(
+                                                key: ValueKey<String>('piece-$index-$value'),
+                                                tween: Tween<double>(begin: 0, end: 1),
+                                                duration: const Duration(milliseconds: 360),
+                                                curve: Curves.bounceOut,
+                                                builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+                                                child: DecoratedBox(
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    gradient: RadialGradient(
+                                                      center: const Alignment(-0.35, -0.35),
+                                                      colors: <Color>[Colors.white.withAlpha(150), colors[value], colors[value]],
+                                                      stops: const <double>[0, .32, 1],
+                                                    ),
+                                                    border: Border.all(color: colors[value].withAlpha(230), width: 2),
+                                                  ),
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        ))),
-        const SizedBox(height: 8),
-        const Text('أول لاعب يجمع أربع قطع متصلة يفوز', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(14)),
+              child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+                Icon(Icons.touch_app_rounded, color: Color(0xFF2563EB), size: 19),
+                SizedBox(width: 6),
+                Flexible(child: Text('اضغط أي عمود لإسقاط القطعة • صِل أربع قطع لتفوز', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF1E3A8A), fontSize: 12, fontWeight: FontWeight.w900))),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeButton extends StatelessWidget {
+  const _ModeButton({required this.label, required this.icon, required this.selected, required this.onTap});
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(14),
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      height: 42,
+      decoration: BoxDecoration(color: selected ? const Color(0xFF2563EB) : Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: selected ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1))),
+      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+        Icon(icon, color: selected ? Colors.white : const Color(0xFF475569), size: 19),
+        const SizedBox(width: 6),
+        Text(label, style: TextStyle(color: selected ? Colors.white : const Color(0xFF475569), fontWeight: FontWeight.w900)),
       ]),
     ),
   );
@@ -169,12 +298,13 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AnimatedContainer(
     duration: const Duration(milliseconds: 180),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-    decoration: BoxDecoration(color: color.withAlpha(active ? 55 : 20), borderRadius: BorderRadius.circular(18), border: Border.all(color: color, width: active ? 3 : 1)),
-    child: Row(mainAxisSize: MainAxisSize.min, children: <Widget>[
-      Container(width: 20, height: 20, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
-      const SizedBox(width: 7),
-      Text(robot ? 'الروبوت' : 'اللاعب $number', style: const TextStyle(fontWeight: FontWeight.w900)),
+    height: 42,
+    padding: const EdgeInsets.symmetric(horizontal: 9),
+    decoration: BoxDecoration(color: color.withAlpha(active ? 50 : 15), borderRadius: BorderRadius.circular(14), border: Border.all(color: color, width: active ? 2.5 : 1)),
+    child: Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+      Container(width: 18, height: 18, decoration: BoxDecoration(shape: BoxShape.circle, color: color, border: Border.all(color: Colors.white, width: 2))),
+      const SizedBox(width: 6),
+      Flexible(child: Text(robot ? 'الروبوت' : 'اللاعب $number', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900))),
     ]),
   );
 }

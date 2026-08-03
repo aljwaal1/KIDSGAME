@@ -12,7 +12,7 @@ class _CheckersPageState extends State<CheckersPage> {
   final confettiKey=GlobalKey<ConfettiOverlayState>(); final random=Random(); Timer? timer;
   late List<int> board; int player=0; int? selected,winner; bool bot=true;
   @override void initState(){super.initState();_reset();}
-  void _reset(){timer?.cancel();board=List<int>.filled(64,0);for(var r=0;r<3;r++)for(var c=0;c<8;c++)if((r+c).isOdd)board[r*8+c]=2;for(var r=5;r<8;r++)for(var c=0;c<8;c++)if((r+c).isOdd)board[r*8+c]=1;setState((){player=0;selected=null;winner=null;});}
+  void _reset(){timer?.cancel();board=List<int>.filled(64,0);for(var r=1;r<=2;r++)for(var c=0;c<8;c++)if((r+c).isOdd)board[r*8+c]=2;for(var r=5;r<=6;r++)for(var c=0;c<8;c++)if((r+c).isOdd)board[r*8+c]=1;setState((){player=0;selected=null;winner=null;});}
   int _owner(int piece)=>(piece==1||piece==3)?0:(piece==2||piece==4)?1:-1;
   bool _mine(int piece,int p)=>_owner(piece)==p;
   List<_Move> _pieceMoves(int from,int side,{bool capturesOnly=false}){

@@ -67,8 +67,6 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
     }
   }
 
-  int get _columns => 4;
-
   String get _levelName {
     switch (level) {
       case _MemoryLevel.easy:
@@ -93,6 +91,26 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
       case _MemoryLevel.expert:
         return 30;
     }
+  }
+
+  int _bestColumnCount(Size available, double spacing) {
+    var bestColumns = 4;
+    var bestCardSide = 0.0;
+    for (var columns = 2; columns <= 12; columns++) {
+      if (cards.length % columns != 0) continue;
+      final rows = cards.length ~/ columns;
+      if (rows < 2) continue;
+      final cardWidth =
+          (available.width - spacing * (columns - 1)) / columns;
+      final cardHeight =
+          (available.height - spacing * (rows - 1)) / rows;
+      final cardSide = min(cardWidth, cardHeight);
+      if (cardSide > bestCardSide) {
+        bestCardSide = cardSide;
+        bestColumns = columns;
+      }
+    }
+    return bestColumns;
   }
 
   void _setLevel(_MemoryLevel value) {
@@ -175,75 +193,148 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
           children: <Widget>[
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(20),
                 gradient: const LinearGradient(colors: <Color>[Color(0xFFEC4899), Color(0xFF8B5CF6)]),
               ),
               child: Row(children: <Widget>[
-                const Icon(Icons.psychology_rounded, color: Colors.white, size: 42),
-                const SizedBox(width: 12),
+                const Icon(Icons.psychology_rounded, color: Colors.white, size: 34),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'تذكّر الصور المتشابهة\n$_levelName: ${cards.length} بطاقة • الحركات: $moves',
-                    style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 18, fontWeight: FontWeight.w900),
+                    'تذكّر الصور المتشابهة  •  $_levelName ${cards.length}\nالحركات: $moves',
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 15, fontWeight: FontWeight.w900, height: 1.35),
                   ),
                 ),
               ]),
             ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              alignment: WrapAlignment.center,
+            const SizedBox(height: 7),
+            Row(
               children: <Widget>[
-                ChoiceChip(label: const Text('سهل 16'), selected: level == _MemoryLevel.easy, onSelected: (_) => _setLevel(_MemoryLevel.easy)),
-                ChoiceChip(label: const Text('متوسط 24'), selected: level == _MemoryLevel.medium, onSelected: (_) => _setLevel(_MemoryLevel.medium)),
-                ChoiceChip(label: const Text('صعب 36'), selected: level == _MemoryLevel.hard, onSelected: (_) => _setLevel(_MemoryLevel.hard)),
-                ChoiceChip(label: const Text('خبير 48'), selected: level == _MemoryLevel.expert, onSelected: (_) => _setLevel(_MemoryLevel.expert)),
+                Expanded(child: _LevelButton(label: 'سهل', count: 16, selected: level == _MemoryLevel.easy, onTap: () => _setLevel(_MemoryLevel.easy))),
+                const SizedBox(width: 5),
+                Expanded(child: _LevelButton(label: 'متوسط', count: 24, selected: level == _MemoryLevel.medium, onTap: () => _setLevel(_MemoryLevel.medium))),
+                const SizedBox(width: 5),
+                Expanded(child: _LevelButton(label: 'صعب', count: 36, selected: level == _MemoryLevel.hard, onTap: () => _setLevel(_MemoryLevel.hard))),
+                const SizedBox(width: 5),
+                Expanded(child: _LevelButton(label: 'خبير', count: 48, selected: level == _MemoryLevel.expert, onTap: () => _setLevel(_MemoryLevel.expert))),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 7),
             Expanded(
-              child: GridView.builder(
-                itemCount: cards.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: _columns,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: level == _MemoryLevel.expert ? .74 : .78,
-                ),
-                itemBuilder: (BuildContext context, int index) {
-                  final _CardItem card = cards[index];
-                  final bool visible = card.open || card.done;
-                  return Card(
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: () => _tap(index),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: LinearGradient(
-                            colors: visible
-                                ? <Color>[const Color(0xFFFFE4E6), const Color(0xFFEDE9FE)]
-                                : <Color>[const Color(0xFF7C3AED), const Color(0xFF06B6D4)],
-                          ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            visible ? card.icon : Icons.question_mark_rounded,
-                            color: visible ? const Color(0xFF7C3AED) : Colors.white,
-                            size: _iconSize,
-                          ),
-                        ),
-                      ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final spacing = cards.length >= 36 ? 4.0 : 6.0;
+                  final available = Size(constraints.maxWidth, constraints.maxHeight);
+                  final columns = _bestColumnCount(available, spacing);
+                  final rows = cards.length ~/ columns;
+                  final cardHeight =
+                      (available.height - spacing * (rows - 1)) / rows;
+                  return GridView.builder(
+                    padding: EdgeInsets.zero,
+                    primary: false,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: cards.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      mainAxisSpacing: spacing,
+                      crossAxisSpacing: spacing,
+                      mainAxisExtent: cardHeight,
                     ),
+                    itemBuilder: (BuildContext context, int index) {
+                      final _CardItem card = cards[index];
+                      final bool visible = card.open || card.done;
+                      final radius = cards.length >= 36 ? 11.0 : 16.0;
+                      return Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(radius),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: () => _tap(index),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(radius),
+                              gradient: LinearGradient(
+                                colors: visible
+                                    ? <Color>[const Color(0xFFFFE4E6), const Color(0xFFEDE9FE)]
+                                    : <Color>[const Color(0xFF7C3AED), const Color(0xFF06B6D4)],
+                              ),
+                              border: Border.all(color: Colors.white, width: cards.length >= 36 ? 1.5 : 2.5),
+                              boxShadow: const <BoxShadow>[
+                                BoxShadow(color: Color(0x227C3AED), blurRadius: 5, offset: Offset(0, 2)),
+                              ],
+                            ),
+                            child: Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Icon(
+                                  visible ? card.icon : Icons.question_mark_rounded,
+                                  color: visible ? const Color(0xFF7C3AED) : Colors.white,
+                                  size: _iconSize,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
             ),
+            const SizedBox(height: 6),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LevelButton extends StatelessWidget {
+  const _LevelButton({
+    required this.label,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(13),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        height: 43,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF7C3AED) : Colors.white,
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(
+            color: selected ? const Color(0xFF7C3AED) : const Color(0xFFD1D5DB),
+          ),
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: Text(
+              '$label $count',
+              maxLines: 1,
+              style: TextStyle(
+                color: selected ? Colors.white : const Color(0xFF374151),
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
         ),
       ),
     );

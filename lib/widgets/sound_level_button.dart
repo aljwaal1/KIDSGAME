@@ -83,21 +83,30 @@ class SoundLevelOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
+    return Column(
       children: <Widget>[
-        child,
-        PositionedDirectional(
-          end: 14,
-          bottom: 14,
-          child: SafeArea(
-            minimum: const EdgeInsets.only(bottom: 4),
-            child: Material(
-              elevation: 6,
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(18),
-              clipBehavior: Clip.antiAlias,
-              child: const SoundLevelButton(showLabel: true),
+        Expanded(child: child),
+        SafeArea(
+          top: false,
+          child: Material(
+            color: Theme.of(context).colorScheme.surface,
+            elevation: 12,
+            child: SizedBox(
+              height: 52,
+              child: Row(
+                children: <Widget>[
+                  const SizedBox(width: 12),
+                  const Icon(Icons.settings_voice_rounded, size: 19, color: Color(0xFF64748B)),
+                  const SizedBox(width: 7),
+                  const Text('صوت اللعبة', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
+                  const Spacer(),
+                  DecoratedBox(
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(15)),
+                    child: const SoundLevelButton(showLabel: true),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+              ),
             ),
           ),
         ),

@@ -26,15 +26,20 @@ class _SnakesAndLaddersPageState extends State<SnakesAndLaddersPage> {
   bool botMode = false;
   int? winner;
   bool rolling = false;
+  bool diceSpinning = false;
+  bool diceRaised = false;
+  double diceTurns = 0;
+  int _rollGeneration = 0;
   String event = 'اضغط على النرد لبدء السباق';
   late List<int> positions;
 
   @override
   void initState() { super.initState(); _reset(); }
   void _reset() {
+    _rollGeneration++;
     botTimer?.cancel();
     positions = List<int>.filled(playerCount, 1);
-    setState(() { player = 0; dice = 1; winner = null; rolling = false; event = 'اضغط على النرد لبدء السباق'; });
+    setState(() { player = 0; dice = 1; winner = null; rolling = false; diceSpinning = false; diceRaised = false; diceTurns = 0; event = 'اضغط على النرد لبدء السباق'; });
   }
   void _setBotMode(bool value) {
     if (botMode == value) return;
@@ -51,33 +56,78 @@ class _SnakesAndLaddersPageState extends State<SnakesAndLaddersPage> {
 
   Future<void> _roll({bool fromBot = false}) async {
     if (rolling || winner != null || botMode && player > 0 && !fromBot) return;
-    setState(() { rolling = true; event = 'النرد يدور...'; });
-    SoundService.instance.play('click.wav');
-    for (var i = 0; i < 6; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 65));
-      if (!mounted) return;
-      setState(() => dice = random.nextInt(6) + 1);
-    }
+    final run = ++_rollGeneration;
     final turn = player;
-    var target = positions[turn] + dice;
-    var text = 'تقدم اللاعب ${turn + 1} $dice خطوات';
-    if (target > 100) {
-      target = positions[turn];
+    final rolled = random.nextInt(6) + 1;
+    setState(() { rolling = true; diceSpinning = true; event = 'النرد يتدحرج...'; });
+    SoundService.instance.play('click.wav');
+    const rollDelays = <int>[65, 72, 82, 96, 115, 145, 185, 235];
+    for (var i = 0; i < rollDelays.length; i++) {
+      await Future<void>.delayed(Duration(milliseconds: rollDelays[i]));
+      if (!mounted || run != _rollGeneration) return;
+      setState(() {
+        dice = i == rollDelays.length - 1 ? rolled : random.nextInt(6) + 1;
+        diceTurns += .22 + random.nextDouble() * .24;
+        diceRaised = !diceRaised;
+      });
+    }
+    if (!mounted || run != _rollGeneration) return;
+    setState(() {
+      dice = rolled;
+      diceSpinning = false;
+      diceRaised = false;
+      diceTurns = diceTurns.roundToDouble();
+      event = 'ظهرت نتيجة النرد: $rolled';
+    });
+    HapticFeedback.mediumImpact();
+
+    // Keep the final face visible before moving the piece.
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    if (!mounted || run != _rollGeneration) return;
+
+    final startPosition = positions[turn];
+    final landingSquare = startPosition + rolled;
+    var target = startPosition;
+    var text = 'تقدم اللاعب ${turn + 1} $rolled خطوات';
+    if (landingSquare > 100) {
       text = 'تحتاج رقمًا مناسبًا للوصول إلى 100';
-    } else if (ladders.containsKey(target)) {
-      final start = target;
-      target = ladders[target]!;
-      text = 'سلم رائع! صعد اللاعب ${turn + 1} من $start إلى $target 🪜';
-      SoundService.instance.play('chime.wav');
-    } else if (snakes.containsKey(target)) {
-      final start = target;
-      target = snakes[target]!;
-      text = 'أعاد الثعبان اللاعب ${turn + 1} من $start إلى $target 🐍';
-      SoundService.instance.play('wrong.wav');
     } else {
       SoundService.instance.play('move.wav');
+      for (var square = startPosition + 1; square <= landingSquare; square++) {
+        if (!mounted || run != _rollGeneration) return;
+        setState(() {
+          positions[turn] = square;
+          event = 'اللاعب ${turn + 1} يتحرك إلى الخانة $square';
+        });
+        HapticFeedback.selectionClick();
+        await Future<void>.delayed(const Duration(milliseconds: 320));
+      }
+      target = landingSquare;
+      if (ladders.containsKey(target)) {
+        final start = target;
+        final destination = ladders[target]!;
+        setState(() => event = 'سُلّم! استعد للصعود من $start');
+        await Future<void>.delayed(const Duration(milliseconds: 600));
+        if (!mounted || run != _rollGeneration) return;
+        target = destination;
+        setState(() => positions[turn] = target);
+        text = 'سلم رائع! صعد اللاعب ${turn + 1} من $start إلى $target 🪜';
+        SoundService.instance.play('chime.wav');
+        await Future<void>.delayed(const Duration(milliseconds: 650));
+      } else if (snakes.containsKey(target)) {
+        final start = target;
+        final destination = snakes[target]!;
+        setState(() => event = 'ثعبان! سيهبط اللاعب من $start');
+        await Future<void>.delayed(const Duration(milliseconds: 600));
+        if (!mounted || run != _rollGeneration) return;
+        target = destination;
+        setState(() => positions[turn] = target);
+        text = 'أعاد الثعبان اللاعب ${turn + 1} من $start إلى $target 🐍';
+        SoundService.instance.play('wrong.wav');
+        await Future<void>.delayed(const Duration(milliseconds: 650));
+      }
     }
-    if (!mounted) return;
+    if (!mounted || run != _rollGeneration) return;
     setState(() {
       positions[turn] = target;
       rolling = false;
@@ -89,7 +139,7 @@ class _SnakesAndLaddersPageState extends State<SnakesAndLaddersPage> {
         HapticFeedback.heavyImpact();
         confettiKey.currentState?.burst(count: 34);
         ScoreService.instance.addStars(4);
-      } else if (dice == 6) {
+      } else if (rolled == 6) {
         event = '$text — حصل على دور إضافي!';
       } else {
         player = (player + 1) % playerCount;
@@ -101,13 +151,13 @@ class _SnakesAndLaddersPageState extends State<SnakesAndLaddersPage> {
   void _scheduleBot() {
     botTimer?.cancel();
     if (!botMode || winner != null || player == 0 || rolling) return;
-    botTimer = Timer(const Duration(milliseconds: 700), () {
+    botTimer = Timer(const Duration(milliseconds: 1050), () {
       if (mounted && winner == null && player > 0 && !rolling) _roll(fromBot: true);
     });
   }
 
   @override
-  void dispose() { botTimer?.cancel(); super.dispose(); }
+  void dispose() { _rollGeneration++; botTimer?.cancel(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -141,15 +191,120 @@ class _SnakesAndLaddersPageState extends State<SnakesAndLaddersPage> {
           const SizedBox(height: 6),
           Expanded(child: Center(child: AspectRatio(aspectRatio: 1, child: CustomPaint(painter: _BoardPainter(positions, playerCount))))),
           const SizedBox(height: 8),
-          FilledButton.icon(
-            onPressed: rolling || winner != null || botMode && player > 0 ? null : () => _roll(),
-            icon: AnimatedRotation(turns: rolling ? 1 : 0, duration: const Duration(milliseconds: 350), child: const Icon(Icons.casino_rounded, size: 28)),
-            label: Text(rolling ? 'يدور...' : 'ارمِ النرد  $dice', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
-            style: FilledButton.styleFrom(backgroundColor: colors[player], minimumSize: const Size(190, 50)),
+          InkWell(
+            onTap: rolling || winner != null || botMode && player > 0 ? null : () => _roll(),
+            borderRadius: BorderRadius.circular(22),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              height: 82,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: rolling ? colors[player].withAlpha(30) : colors[player].withAlpha(20),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: colors[player], width: 2.5),
+                boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 5))],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  AnimatedSlide(
+                    offset: diceRaised ? const Offset(0, -.13) : Offset.zero,
+                    duration: const Duration(milliseconds: 120),
+                    curve: Curves.easeOut,
+                    child: AnimatedRotation(
+                      turns: diceTurns,
+                      duration: Duration(milliseconds: diceSpinning ? 130 : 300),
+                      curve: diceSpinning ? Curves.linear : Curves.easeOutBack,
+                      child: _DiceFace(value: dice, color: colors[player], size: 62),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Flexible(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          diceSpinning ? 'النرد يتدحرج…' : rolling ? 'النتيجة: $dice' : 'اضغط لرمي النرد',
+                          style: TextStyle(color: colors[player], fontSize: 17, fontWeight: FontWeight.w900, fontFamily: 'Changa'),
+                        ),
+                        Text(
+                          diceSpinning ? 'انتظر حتى يتوقف' : rolling ? 'ستتحرك القطعة بعد لحظة' : 'دور اللاعب ${player + 1}',
+                          style: const TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ]),
       ),
     );
+  }
+}
+
+class _DiceFace extends StatelessWidget {
+  const _DiceFace({required this.value, required this.color, required this.size});
+  final int value;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(size * .22),
+        border: Border.all(color: color, width: 3),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(color: Color(0x55000000), blurRadius: 8, offset: Offset(0, 5)),
+          BoxShadow(color: Color(0x55FFFFFF), blurRadius: 3, offset: Offset(-2, -2)),
+        ],
+      ),
+      child: CustomPaint(painter: _DicePainter(value: value, color: color)),
+    );
+  }
+}
+
+class _DicePainter extends CustomPainter {
+  const _DicePainter({required this.value, required this.color});
+  final int value;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final positions = <Offset>[
+      Offset(size.width * .27, size.height * .27),
+      Offset(size.width * .50, size.height * .27),
+      Offset(size.width * .73, size.height * .27),
+      Offset(size.width * .27, size.height * .50),
+      Offset(size.width * .50, size.height * .50),
+      Offset(size.width * .73, size.height * .50),
+      Offset(size.width * .27, size.height * .73),
+      Offset(size.width * .50, size.height * .73),
+      Offset(size.width * .73, size.height * .73),
+    ];
+    const faceDots = <int, List<int>>{
+      1: <int>[4],
+      2: <int>[0, 8],
+      3: <int>[0, 4, 8],
+      4: <int>[0, 2, 6, 8],
+      5: <int>[0, 2, 4, 6, 8],
+      6: <int>[0, 2, 3, 5, 6, 8],
+    };
+    final paint = Paint()..color = color;
+    for (final index in faceDots[value] ?? const <int>[4]) {
+      canvas.drawCircle(positions[index], size.width * .075, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DicePainter oldDelegate) {
+    return oldDelegate.value != value || oldDelegate.color != color;
   }
 }
 

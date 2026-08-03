@@ -7,22 +7,58 @@ import '../widgets/game_header.dart';
 class AirHockeyPage extends StatefulWidget { const AirHockeyPage({super.key}); @override State<AirHockeyPage> createState()=>_AirHockeyPageState(); }
 class _AirHockeyPageState extends State<AirHockeyPage> with SingleTickerProviderStateMixin {
   final confettiKey=GlobalKey<ConfettiOverlayState>(); late final AnimationController clock;
-  Offset puck=const Offset(.5,.5),velocity=const Offset(.004,.006),bottom=const Offset(.5,.84),top=const Offset(.5,.16),bottomVelocity=Offset.zero,topVelocity=Offset.zero;int bottomScore=0,topScore=0;bool bot=true,playing=true;
-  @override void initState(){super.initState();clock=AnimationController(vsync:this,duration:const Duration(seconds:1))..addListener(_tick)..repeat();}
-  void _tick(){if(!mounted||!playing)return;var p=puck+velocity,v=velocity*.999;if(bot&&p.dy<.58){final old=top;top=Offset((top.dx+(p.dx-top.dx)*.022).clamp(.14,.86),.16);topVelocity=top-old;}else if(bot){topVelocity=Offset.zero;}if(p.dx<.045||p.dx>.955){v=Offset(-v.dx,v.dy);p=Offset(p.dx.clamp(.045,.955),p.dy);}v=_collide(bottom,p,bottomVelocity,true,v);v=_collide(top,p,topVelocity,false,v);bottomVelocity*=.82;topVelocity*=.82;if(p.dy<0){bottomScore++;_goal(true);return;}if(p.dy>1){topScore++;_goal(false);return;}setState((){puck=p;velocity=v;});}
-  Offset _collide(Offset paddle,Offset p,Offset paddleSpeed,bool lower,Offset current){final d=p-paddle;if(d.distance>=.105||d.distance==0||(lower?current.dy<=0:current.dy>=0))return current;final n=d/d.distance;var result=n*.0065+paddleSpeed*1.15;final speed=result.distance.clamp(.005, .019).toDouble();result=result/result.distance*speed;SoundService.instance.play('tap.wav');return result;}
-  void _goal(bool human){SoundService.instance.play('chime.wav');if(bottomScore>=5||topScore>=5){playing=false;confettiKey.currentState?.burst(count:34);SoundService.instance.play('win.wav');}setState((){puck=const Offset(.5,.5);velocity=Offset((Random().nextDouble()-.5)*.006,human?0.006:-0.006);});}
-  void _reset(){setState((){bottomScore=0;topScore=0;playing=true;puck=const Offset(.5,.5);velocity=const Offset(.004,.006);bottom=const Offset(.5,.84);top=const Offset(.5,.16);bottomVelocity=Offset.zero;topVelocity=Offset.zero;});}
-  Offset _limit(Offset value,double max){return value.distance>max?value/value.distance*max:value;}
-  void _movePointer(PointerEvent e,BoxConstraints c){final local=e.localPosition;final x=(local.dx/c.maxWidth).clamp(.1,.9),y=(local.dy/c.maxHeight).clamp(.08,.92);if(y>.5){final next=Offset(x,y.clamp(.56,.92));bottomVelocity=_limit(next-bottom,.028);bottom=next;}else if(!bot){final next=Offset(x,y.clamp(.08,.44));topVelocity=_limit(next-top,.028);top=next;}}
+  final Stopwatch _physicsClock=Stopwatch();final Map<int,_PointerSample> _pointerSamples=<int,_PointerSample>{};final Map<int,bool> _pointerLower=<int,bool>{};
+  Offset puck=const Offset(.5,.5),velocity=const Offset(.24,.34),bottom=const Offset(.5,.84),top=const Offset(.5,.16),bottomVelocity=Offset.zero,topVelocity=Offset.zero;int bottomScore=0,topScore=0,_lastMicros=0;bool bot=true,playing=true,bottomContact=false,topContact=false;
+  @override void initState(){super.initState();_physicsClock.start();clock=AnimationController(vsync:this,duration:const Duration(seconds:1))..addListener(_tick)..repeat();}
+  void _tick(){
+    if(!mounted||!playing)return;
+    final now=_physicsClock.elapsedMicroseconds;
+    if(_lastMicros==0){_lastMicros=now;return;}
+    final dt=((now-_lastMicros)/1000000).clamp(.001,.034).toDouble();_lastMicros=now;
+    var p=puck+velocity*dt,v=velocity*pow(.985,dt*60).toDouble();
+    if(bot&&p.dy<.62){
+      final targetX=(p.dx+v.dx*.12).clamp(.13,.87);final difference=targetX-top.dx;final step=difference.clamp(-.46*dt,.46*dt).toDouble();
+      final old=top;top=Offset((top.dx+step).clamp(.13,.87),.16);topVelocity=(top-old)/dt;
+    }else if(bot){topVelocity*=pow(.20,dt).toDouble();}
+    const radius=.042;
+    if(p.dx<radius||p.dx>1-radius){v=Offset(-v.dx*.94,v.dy);p=Offset(p.dx.clamp(radius,1-radius),p.dy);SoundService.instance.play('tap.wav');}
+    final inGoal=p.dx>.31&&p.dx<.69;
+    if(!inGoal&&p.dy<radius){v=Offset(v.dx,-v.dy*.94);p=Offset(p.dx,radius);SoundService.instance.play('tap.wav');}
+    if(!inGoal&&p.dy>1-radius){v=Offset(v.dx,-v.dy*.94);p=Offset(p.dx,1-radius);SoundService.instance.play('tap.wav');}
+    final lowerHit=_collide(bottom,p,bottomVelocity,bottomContact,v);p=lowerHit.position;v=lowerHit.velocity;bottomContact=lowerHit.contact;
+    final upperHit=_collide(top,p,topVelocity,topContact,v);p=upperHit.position;v=upperHit.velocity;topContact=upperHit.contact;
+    bottomVelocity*=pow(.08,dt).toDouble();topVelocity*=pow(.08,dt).toDouble();
+    if(p.dy<-.05&&inGoal){bottomScore++;_goal(true);return;}if(p.dy>1.05&&inGoal){topScore++;_goal(false);return;}
+    if(v.distance<.018)v=Offset.zero;
+    setState((){puck=p;velocity=v;});
+  }
+  ({Offset position,Offset velocity,bool contact}) _collide(Offset paddle,Offset p,Offset paddleSpeed,bool wasTouching,Offset current){
+    final d=p-paddle,distance=d.distance;if(distance>=.108||distance==0)return(position:p,velocity:current,contact:false);final n=d/distance;
+    if(wasTouching)return(position:p,velocity:current,contact:true);
+    final relative=current-paddleSpeed,approach=relative.dx*n.dx+relative.dy*n.dy;
+    if(approach>=0&&paddleSpeed.distance<.08)return(position:p,velocity:current,contact:true);
+    var result=relative-n*(1.88*approach)+paddleSpeed*1.22;
+    if(result.distance<.20)result=n*.20+paddleSpeed*.55;
+    result=_limit(result,2.25);
+    SoundService.instance.play('tap.wav');
+    return(position:paddle+n*.109,velocity:result,contact:true);
+  }
+  void _goal(bool human){SoundService.instance.play('chime.wav');if(bottomScore>=5||topScore>=5){playing=false;confettiKey.currentState?.burst(count:34);SoundService.instance.play('win.wav');}setState((){puck=const Offset(.5,.5);velocity=Offset((Random().nextDouble()-.5)*.32,human ? .34 : -.34);bottomContact=topContact=false;});}
+  void _reset(){setState((){bottomScore=0;topScore=0;playing=true;puck=const Offset(.5,.5);velocity=const Offset(.24,.34);bottom=const Offset(.5,.84);top=const Offset(.5,.16);bottomVelocity=Offset.zero;topVelocity=Offset.zero;bottomContact=topContact=false;_lastMicros=_physicsClock.elapsedMicroseconds;});}
+  Offset _limit(Offset value,double maximum)=>value.distance>maximum?value/value.distance*maximum:value;
+  Offset _normalizedPosition(PointerEvent e,BoxConstraints c)=>Offset((e.localPosition.dx/c.maxWidth).clamp(.1,.9),(e.localPosition.dy/c.maxHeight).clamp(.08,.92));
+  void _pointerDown(PointerDownEvent e,BoxConstraints c){final position=_normalizedPosition(e,c),lower=position.dy>=.5;if(!lower&&bot)return;_pointerLower[e.pointer]=lower;_pointerSamples[e.pointer]=_PointerSample(position,e.timeStamp);if(lower){bottom=Offset(position.dx,position.dy.clamp(.56,.92));bottomVelocity=Offset.zero;}else{top=Offset(position.dx,position.dy.clamp(.08,.44));topVelocity=Offset.zero;}}
+  void _pointerMove(PointerMoveEvent e,BoxConstraints c){final lower=_pointerLower[e.pointer],sample=_pointerSamples[e.pointer];if(lower==null||sample==null)return;final raw=_normalizedPosition(e,c);final next=lower?Offset(raw.dx,raw.dy.clamp(.56,.92)):Offset(raw.dx,raw.dy.clamp(.08,.44));final dt=(e.timeStamp-sample.time).inMicroseconds/1000000;if(dt<=0)return;final instant=_limit((next-sample.position)/dt,3.2);if(lower){bottomVelocity=bottomVelocity*.28+instant*.72;bottom=next;}else{topVelocity=topVelocity*.28+instant*.72;top=next;}_pointerSamples[e.pointer]=_PointerSample(next,e.timeStamp);}
+  void _pointerUp(PointerEvent e){_pointerSamples.remove(e.pointer);_pointerLower.remove(e.pointer);}
   @override void dispose(){clock.dispose();super.dispose();}
   @override Widget build(BuildContext context)=>ConfettiOverlay(key:confettiKey,child:Padding(padding:const EdgeInsets.fromLTRB(14,8,14,12),child:Column(children:[
     GameHeader(title:'الهوكي الهوائي',subtitle:playing?'الأول الذي يسجل 5 أهداف يفوز':(bottomScore>topScore?'فاز اللاعب 1 🎉':'فاز ${bot?'الروبوت':'اللاعب 2'} 🎉'),color:const Color(0xFF0891B2),onReset:_reset),
     const SizedBox(height:7),Row(children:[Expanded(child:ChoiceChip(label:const Text('ضد الروبوت'),selected:bot,onSelected:(_){bot=true;_reset();})),const SizedBox(width:8),Expanded(child:ChoiceChip(label:const Text('مع صديق'),selected:!bot,onSelected:(_){bot=false;_reset();}))]),const SizedBox(height:7),
     Row(mainAxisAlignment:MainAxisAlignment.center,children:[_Score(name:'اللاعب 1',score:bottomScore,color:const Color(0xFF22D3EE)),const SizedBox(width:18),_Score(name:bot?'الروبوت':'اللاعب 2',score:topScore,color:const Color(0xFFF472B6))]),const SizedBox(height:8),
-    Expanded(child:LayoutBuilder(builder:(context,c)=>Listener(onPointerDown:(e)=>_movePointer(e,c),onPointerMove:(e)=>_movePointer(e,c),child:CustomPaint(size:Size(c.maxWidth,c.maxHeight),painter:_HockeyPainter(puck,bottom,top)))))
+    Expanded(child:LayoutBuilder(builder:(context,c)=>Listener(onPointerDown:(e)=>_pointerDown(e,c),onPointerMove:(e)=>_pointerMove(e,c),onPointerUp:_pointerUp,onPointerCancel:_pointerUp,child:CustomPaint(size:Size(c.maxWidth,c.maxHeight),painter:_HockeyPainter(puck,bottom,top)))))
   ])));
 }
+class _PointerSample{const _PointerSample(this.position,this.time);final Offset position;final Duration time;}
 class _Score extends StatelessWidget{const _Score({required this.name,required this.score,required this.color});final String name;final int score;final Color color;@override Widget build(BuildContext context)=>Container(padding:const EdgeInsets.symmetric(horizontal:14,vertical:7),decoration:BoxDecoration(color:color.withAlpha(25),border:Border.all(color:color),borderRadius:BorderRadius.circular(16)),child:Text('$name  $score',style:TextStyle(color:color,fontWeight:FontWeight.w900,fontSize:16)));}
 class _HockeyPainter extends CustomPainter{const _HockeyPainter(this.puck,this.bottom,this.top);final Offset puck,bottom,top;Offset p(Offset x,Size s)=>Offset(x.dx*s.width,x.dy*s.height);@override void paint(Canvas c,Size s){final rect=Offset.zero&s;c.drawRRect(RRect.fromRectAndRadius(rect,const Radius.circular(30)),Paint()..shader=const LinearGradient(colors:[Color(0xFF071B33),Color(0xFF0B3556),Color(0xFF071B33)],begin:Alignment.topCenter,end:Alignment.bottomCenter).createShader(rect));final line=Paint()..color=const Color(0x8838BDF8)..style=PaintingStyle.stroke..strokeWidth=3;c.drawLine(Offset(0,s.height/2),Offset(s.width,s.height/2),line);c.drawCircle(Offset(s.width/2,s.height/2),s.width*.14,line);c.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center:Offset(s.width/2,0),width:s.width*.38,height:22),const Radius.circular(12)),Paint()..color=const Color(0xFFF472B6));c.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center:Offset(s.width/2,s.height),width:s.width*.38,height:22),const Radius.circular(12)),Paint()..color=const Color(0xFF22D3EE));_disc(c,p(top,s),s.width*.065,const Color(0xFFF472B6));_disc(c,p(bottom,s),s.width*.065,const Color(0xFF22D3EE));_disc(c,p(puck,s),s.width*.035,Colors.white);}
 void _disc(Canvas c,Offset center,double r,Color color){c.drawCircle(center,r,Paint()..color=const Color(0x55000000)..maskFilter=const MaskFilter.blur(BlurStyle.normal,8));c.drawCircle(center,r,Paint()..shader=RadialGradient(colors:[Colors.white,color]).createShader(Rect.fromCircle(center:center,radius:r)));} @override bool shouldRepaint(covariant _HockeyPainter old)=>true;}

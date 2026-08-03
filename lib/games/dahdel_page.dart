@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../services/score_service.dart';
 import '../services/sound_service.dart';
@@ -12,105 +15,227 @@ class DahdelPage extends StatefulWidget {
 }
 
 class _DahdelPageState extends State<DahdelPage> {
-  double aim = 0.5;
-  double power = 0.55;
-  double ballX = 0.5;
-  double ballY = 0.88;
-  int score = 0;
-  int tries = 0;
-  bool rolling = false;
-  String message = 'اسحب لتحديد اتجاه الدحدل';
+  final math.Random _random = math.Random();
+  final List<Color> _colors = const <Color>[Color(0xFFDC2626), Color(0xFF2563EB)];
+  final List<int> _scores = <int>[0, 0];
+  final List<Offset> _groundMarbles = <Offset>[];
+  Timer? _botTimer;
 
-  void resetBall() {
+  bool _againstBot = true;
+  bool _moving = false;
+  int _player = 0;
+  int _throws = 0;
+  Offset _shot = const Offset(.5, .90);
+  Offset _drag = Offset.zero;
+  Offset? _dragStart;
+  Size _fieldSize = Size.zero;
+  String _message = 'اسحب الجلّ من الأسفل ثم اتركه';
+
+  @override
+  void initState() {
+    super.initState();
+    _seedGround();
+  }
+
+  @override
+  void dispose() {
+    _botTimer?.cancel();
+    super.dispose();
+  }
+
+  void _seedGround() {
+    _groundMarbles
+      ..clear()
+      ..addAll(<Offset>[
+        const Offset(.34, .34),
+        const Offset(.61, .45),
+        const Offset(.48, .62),
+      ]);
+  }
+
+  void _reset() {
+    _botTimer?.cancel();
     setState(() {
-      ballX = 0.5;
-      ballY = 0.88;
-      rolling = false;
-      message = 'اسحب لتحديد اتجاه الدحدل';
+      _scores[0] = 0;
+      _scores[1] = 0;
+      _player = 0;
+      _throws = 0;
+      _moving = false;
+      _shot = const Offset(.5, .90);
+      _drag = Offset.zero;
+      _dragStart = null;
+      _message = 'اسحب الجلّ من الأسفل ثم اتركه';
+      _seedGround();
     });
   }
 
-  Future<void> roll() async {
-    if (rolling) return;
+  void _setMode(bool againstBot) {
+    if (_againstBot == againstBot) return;
+    _againstBot = againstBot;
+    _reset();
+  }
+
+  void _panStart(DragStartDetails details) {
+    if (_moving || (_againstBot && _player == 1)) return;
+    _dragStart = details.localPosition;
+    _drag = Offset.zero;
+    setState(() => _message = 'اسحب باتجاه الحصى ثم اترك');
+  }
+
+  void _panUpdate(DragUpdateDetails details) {
+    if (_dragStart == null || _moving) return;
+    setState(() => _drag = details.localPosition - _dragStart!);
+  }
+
+  void _panEnd(DragEndDetails details) {
+    if (_dragStart == null || _moving || _fieldSize.isEmpty) return;
+    final gestureVelocity = Offset(
+      details.velocity.pixelsPerSecond.dx / _fieldSize.width,
+      details.velocity.pixelsPerSecond.dy / _fieldSize.height,
+    );
+    var velocity = gestureVelocity;
+    if (velocity.distance < .35) {
+      velocity = Offset(
+        _drag.dx / _fieldSize.width * 4.2,
+        _drag.dy / _fieldSize.height * 4.2,
+      );
+    }
+    _dragStart = null;
+    _drag = Offset.zero;
+    if (velocity.dy > -.12) {
+      setState(() => _message = 'اسحب الجلّ إلى الأعلى باتجاه الحصى');
+      return;
+    }
+    _shoot(_limit(velocity, 1.75));
+  }
+
+  Offset _limit(Offset value, double maximum) {
+    return value.distance > maximum ? value / value.distance * maximum : value;
+  }
+
+  Future<void> _shoot(Offset initialVelocity, {bool robot = false}) async {
+    if (_moving) return;
+    final throwingPlayer = _player;
     setState(() {
-      rolling = true;
-      tries++;
-      message = 'الدحدل يتحرك...';
+      _moving = true;
+      _throws++;
+      _message = '${robot ? 'الروبوت' : 'اللاعب ${throwingPlayer + 1}'} رمى الجلّ';
     });
-    await SoundService.instance.play('move.wav');
+    SoundService.instance.play('move.wav');
 
-    final targetX = 0.5;
-    final targetY = 0.16;
-    final drift = (aim - 0.5) * 0.42;
-    final finalX = (0.5 + drift).clamp(0.12, 0.88).toDouble();
-    final finalY = (0.88 - power * 0.78).clamp(0.14, 0.88).toDouble();
-
-    const frames = 18;
-    final startX = ballX;
-    final startY = ballY;
-    for (var i = 1; i <= frames; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 22));
+    var position = const Offset(.5, .90);
+    var velocity = initialVelocity;
+    var hit = false;
+    for (var frame = 0; frame < 100; frame++) {
+      await Future<void>.delayed(const Duration(milliseconds: 16));
       if (!mounted) return;
-      final t = i / frames;
+      position += velocity * .016;
+      velocity *= .976;
+      if (position.dx < .035 || position.dx > .965) {
+        velocity = Offset(-velocity.dx * .72, velocity.dy);
+        position = Offset(position.dx.clamp(.035, .965), position.dy);
+      }
+      if (position.dy < .05) {
+        velocity = Offset(velocity.dx, -velocity.dy * .62);
+        position = Offset(position.dx, .05);
+      }
+      if (position.dy > .95) {
+        velocity = Offset(velocity.dx, -velocity.dy * .52);
+        position = Offset(position.dx, .95);
+      }
+      hit = _groundMarbles.any((marble) => (marble - position).distance < .058);
+      setState(() => _shot = position);
+      if (hit || velocity.distance < .055) break;
+    }
+
+    if (!mounted) return;
+    if (hit) {
+      final captured = _groundMarbles.length;
       setState(() {
-        ballX = startX + (finalX - startX) * t;
-        ballY = startY + (finalY - startY) * t;
+        _scores[throwingPlayer] += captured;
+        _message = 'إصابة! جمع اللاعب ${throwingPlayer + 1} كل الجلول ($captured)';
+        _seedGround();
       });
+      HapticFeedback.heavyImpact();
+      SoundService.instance.play('win.wav');
+      ScoreService.instance.addStars(2);
+      await Future<void>.delayed(const Duration(milliseconds: 950));
+    } else {
+      setState(() {
+        _groundMarbles.add(position);
+        _message = 'لم يصب — بقي الجلّ على الأرض';
+      });
+      SoundService.instance.play('tap.wav');
+      await Future<void>.delayed(const Duration(milliseconds: 650));
     }
 
-    final distance = math.sqrt(math.pow(ballX - targetX, 2) + math.pow(ballY - targetY, 2));
-    if (distance < 0.13) {
-      score++;
-      await ScoreService.instance.addStars(2);
-      await SoundService.instance.play('win.wav');
-      if (!mounted) return;
-      setState(() => message = 'رائع! دخل الدحدل في الهدف');
-    } else {
-      await SoundService.instance.play('wrong.wav');
-      if (!mounted) return;
-      setState(() => message = 'قريب! جرّب اتجاهًا أقرب للوسط');
-    }
-    await Future<void>.delayed(const Duration(milliseconds: 650));
-    if (mounted) resetBall();
+    if (!mounted) return;
+    setState(() {
+      _shot = const Offset(.5, .90);
+      _moving = false;
+      _player = 1 - throwingPlayer;
+      _message = _againstBot && _player == 1
+          ? 'دور الروبوت…'
+          : 'دور اللاعب ${_player + 1}: ارمِ جلّاً واحداً';
+    });
+    if (_againstBot && _player == 1) _scheduleBot();
   }
 
-  void updateAim(DragUpdateDetails details, double width) {
-    if (rolling) return;
-    setState(() {
-      aim = (details.localPosition.dx / width).clamp(0.05, 0.95).toDouble();
-      power = (1 - (details.localPosition.dy / 220)).clamp(0.30, 0.95).toDouble();
-      message = 'اترك إصبعك لدحرجة الدحدل';
+  void _scheduleBot() {
+    _botTimer?.cancel();
+    _botTimer = Timer(const Duration(milliseconds: 850), () {
+      if (!mounted || _moving || _player != 1) return;
+      final target = _groundMarbles[_random.nextInt(_groundMarbles.length)];
+      final delta = target - const Offset(.5, .90);
+      final error = Offset((_random.nextDouble() - .5) * .12, (_random.nextDouble() - .5) * .05);
+      _shoot(_limit((delta + error) * 1.55, 1.45), robot: true);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('الدحدل')),
+      appBar: AppBar(
+        title: const Text('الدحدل'),
+        actions: <Widget>[IconButton(onPressed: _reset, icon: const Icon(Icons.refresh_rounded))],
+      ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        padding: const EdgeInsets.fromLTRB(12, 7, 12, 12),
         child: Column(
           children: <Widget>[
-            _DahdelHeader(score: score, tries: tries, message: message),
-            const SizedBox(height: 10),
+            _DahdelHeader(message: _message, scores: _scores, player: _player, colors: _colors, throws: _throws),
+            const SizedBox(height: 7),
+            Row(children: <Widget>[
+              Expanded(child: ChoiceChip(label: const Text('ضد الروبوت'), selected: _againstBot, onSelected: (_) => _setMode(true))),
+              const SizedBox(width: 7),
+              Expanded(child: ChoiceChip(label: const Text('مع صديق'), selected: !_againstBot, onSelected: (_) => _setMode(false))),
+            ]),
+            const SizedBox(height: 7),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
+                  _fieldSize = Size(constraints.maxWidth, constraints.maxHeight);
                   return GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onPanUpdate: (details) => updateAim(details, constraints.maxWidth),
-                    onPanEnd: (_) => roll(),
-                    onTap: roll,
+                    onPanStart: _panStart,
+                    onPanUpdate: _panUpdate,
+                    onPanEnd: _panEnd,
                     child: CustomPaint(
-                      painter: _DahdelPainter(aim: aim, power: power, ballX: ballX, ballY: ballY, rolling: rolling),
+                      painter: _DahdelPainter(
+                        groundMarbles: _groundMarbles,
+                        shot: _shot,
+                        drag: _drag,
+                        playerColor: _colors[_player],
+                        moving: _moving,
+                      ),
                       child: const SizedBox.expand(),
                     ),
                   );
                 },
               ),
             ),
-            const SizedBox(height: 8),
-            _HintBox(text: rolling ? 'انتظر حتى يتوقف الدحدل' : 'حرّك إصبعك يمينًا ويسارًا ثم اتركه.'),
+            const SizedBox(height: 7),
+            const _DahdelRules(),
           ],
         ),
       ),
@@ -119,24 +244,25 @@ class _DahdelPageState extends State<DahdelPage> {
 }
 
 class _DahdelHeader extends StatelessWidget {
-  const _DahdelHeader({required this.score, required this.tries, required this.message});
-  final int score;
-  final int tries;
+  const _DahdelHeader({required this.message, required this.scores, required this.player, required this.colors, required this.throws});
   final String message;
+  final List<int> scores;
+  final int player;
+  final List<Color> colors;
+  final int throws;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 100,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(26), gradient: const LinearGradient(colors: <Color>[Color(0xFF0F766E), Color(0xFF14B8A6)])),
+      height: 92,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), gradient: const LinearGradient(colors: <Color>[Color(0xFF0F766E), Color(0xFF14B8A6)])),
       child: Row(children: <Widget>[
-        const Icon(Icons.sports_baseball_rounded, color: Colors.white, size: 42),
-        const SizedBox(width: 12),
+        Icon(Icons.circle, color: colors[player], size: 34),
+        const SizedBox(width: 10),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-          Text(message, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 19, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 5),
-          Text('النقاط: $score  •  المحاولات: $tries', style: const TextStyle(color: Color(0xFFE0F2FE), fontWeight: FontWeight.w700)),
+          Text(message, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 15, fontWeight: FontWeight.w900, height: 1.3)),
+          Text('الأحمر ${scores[0]}  •  الأزرق ${scores[1]}  •  الرميات $throws', style: const TextStyle(color: Color(0xFFCCFBF1), fontSize: 12, fontWeight: FontWeight.w800)),
         ])),
       ]),
     );
@@ -144,62 +270,60 @@ class _DahdelHeader extends StatelessWidget {
 }
 
 class _DahdelPainter extends CustomPainter {
-  const _DahdelPainter({required this.aim, required this.power, required this.ballX, required this.ballY, required this.rolling});
-  final double aim;
-  final double power;
-  final double ballX;
-  final double ballY;
-  final bool rolling;
+  const _DahdelPainter({required this.groundMarbles, required this.shot, required this.drag, required this.playerColor, required this.moving});
+  final List<Offset> groundMarbles;
+  final Offset shot;
+  final Offset drag;
+  final Color playerColor;
+  final bool moving;
+
+  Offset _point(Offset value, Size size) => Offset(value.dx * size.width, value.dy * size.height);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final field = RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(28));
-    canvas.drawRRect(field, Paint()..color = const Color(0xFFECFDF5));
-    final border = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..color = const Color(0xFF0F766E);
-    canvas.drawRRect(field, border);
-
-    final lanePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round
-      ..color = const Color(0x55888888);
-    for (var x = .2; x <= .8; x += .2) {
-      canvas.drawLine(Offset(size.width * x, 16), Offset(size.width * x, size.height - 16), lanePaint);
+    final field = RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(24));
+    canvas.drawRRect(field, Paint()..shader = const LinearGradient(colors: <Color>[Color(0xFFF7E7C6), Color(0xFFE8C98F)]).createShader(Offset.zero & size));
+    canvas.drawRRect(field, Paint()..style = PaintingStyle.stroke..strokeWidth = 3..color = const Color(0xFF92400E));
+    for (var i = 0; i < 18; i++) {
+      final x = (i * 73 % 101) / 101 * size.width;
+      final y = (i * 47 % 97) / 97 * size.height;
+      canvas.drawCircle(Offset(x, y), 1.4, Paint()..color = const Color(0x33854D0E));
     }
+    for (var i = 0; i < groundMarbles.length; i++) {
+      _marble(canvas, _point(groundMarbles[i], size), 10, i.isEven ? const Color(0xFF2563EB) : const Color(0xFFF59E0B));
+    }
+    final shotPoint = _point(shot, size);
+    _marble(canvas, shotPoint, 11, playerColor);
+    if (!moving && drag.distance > 4) {
+      final end = shotPoint + drag;
+      canvas.drawLine(shotPoint, end, Paint()..color = playerColor..strokeWidth = 4..strokeCap = StrokeCap.round);
+      canvas.drawCircle(end, 6, Paint()..color = playerColor);
+    }
+  }
 
-    final target = Offset(size.width * .5, size.height * .16);
-    canvas.drawCircle(target, 42, Paint()..color = const Color(0xFFFFFFFF));
-    canvas.drawCircle(target, 42, Paint()..style = PaintingStyle.stroke..strokeWidth = 5..color = const Color(0xFF22C55E));
-    canvas.drawCircle(target, 17, Paint()..color = const Color(0xFF22C55E));
-
-    final start = Offset(size.width * .5, size.height * .88);
-    final aimPoint = Offset(size.width * aim, size.height * (.88 - power * .42));
-    final aimPaint = Paint()
-      ..color = const Color(0xFFEA580C)
-      ..strokeWidth = 5
-      ..strokeCap = StrokeCap.round;
-    if (!rolling) canvas.drawLine(start, aimPoint, aimPaint);
-
-    final ball = Offset(size.width * ballX, size.height * ballY);
-    canvas.drawCircle(ball.translate(4, 7), 23, Paint()..color = const Color(0x33000000));
-    canvas.drawCircle(ball, 24, Paint()..color = const Color(0xFF92400E));
-    canvas.drawCircle(ball.translate(-7, -7), 8, Paint()..color = const Color(0xFFFFF7ED));
+  void _marble(Canvas canvas, Offset center, double radius, Color color) {
+    canvas.drawCircle(center + const Offset(2, 3), radius, Paint()..color = const Color(0x44000000));
+    canvas.drawCircle(center, radius, Paint()..shader = RadialGradient(center: const Alignment(-.35, -.4), colors: <Color>[Colors.white, color, color.withAlpha(210)], stops: const <double>[0, .35, 1]).createShader(Rect.fromCircle(center: center, radius: radius)));
+    canvas.drawCircle(center, radius, Paint()..style = PaintingStyle.stroke..strokeWidth = 1.5..color = Colors.white.withAlpha(190));
   }
 
   @override
-  bool shouldRepaint(covariant _DahdelPainter oldDelegate) {
-    return oldDelegate.aim != aim || oldDelegate.power != power || oldDelegate.ballX != ballX || oldDelegate.ballY != ballY || oldDelegate.rolling != rolling;
-  }
+  bool shouldRepaint(covariant _DahdelPainter oldDelegate) => true;
 }
 
-class _HintBox extends StatelessWidget {
-  const _HintBox({required this.text});
-  final String text;
+class _DahdelRules extends StatelessWidget {
+  const _DahdelRules();
+
   @override
   Widget build(BuildContext context) {
-    return Container(height: 52, alignment: Alignment.center, decoration: BoxDecoration(color: const Color(0xFFF0FDFA), borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFF99F6E4))), child: Text(text, style: const TextStyle(color: Color(0xFF0F766E), fontWeight: FontWeight.w800)));
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: BoxDecoration(color: const Color(0xFFF0FDFA), borderRadius: BorderRadius.circular(15), border: Border.all(color: const Color(0xFF5EEAD4))),
+      child: const Row(children: <Widget>[
+        Icon(Icons.info_rounded, color: Color(0xFF0F766E), size: 20),
+        SizedBox(width: 6),
+        Expanded(child: Text('كل لاعب يرمي جلّاً واحداً. إذا اصطدم بأي جلّ، يجمع كل الجلول الموجودة على الأرض.', style: TextStyle(color: Color(0xFF115E59), fontSize: 11, fontWeight: FontWeight.w900))),
+      ]),
+    );
   }
 }

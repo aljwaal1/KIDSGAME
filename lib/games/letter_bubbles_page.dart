@@ -1,12 +1,47 @@
+import 'dart:async';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+
 import '../services/score_service.dart';
 import '../services/sound_service.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
 
 const List<String> _arabicLetters = <String>['أ','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز','س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ك','ل','م','ن','ه','و','ي'];
+
+const Map<String, String> _arabicLetterNames = <String, String>{
+  'أ': 'ألف',
+  'ب': 'باء',
+  'ت': 'تاء',
+  'ث': 'ثاء',
+  'ج': 'جيم',
+  'ح': 'حاء',
+  'خ': 'خاء',
+  'د': 'دال',
+  'ذ': 'ذال',
+  'ر': 'راء',
+  'ز': 'زاي',
+  'س': 'سين',
+  'ش': 'شين',
+  'ص': 'صاد',
+  'ض': 'ضاد',
+  'ط': 'طاء',
+  'ظ': 'ظاء',
+  'ع': 'عين',
+  'غ': 'غين',
+  'ف': 'فاء',
+  'ق': 'قاف',
+  'ك': 'كاف',
+  'ل': 'لام',
+  'م': 'ميم',
+  'ن': 'نون',
+  'ه': 'هاء',
+  'و': 'واو',
+  'ي': 'ياء',
+};
 
 class BubbleLettersPage extends StatefulWidget {
   const BubbleLettersPage({super.key});
@@ -24,12 +59,52 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
   int streak = 0;
   int? bestStreak;
   final GlobalKey<ConfettiOverlayState> confettiKey = GlobalKey<ConfettiOverlayState>();
+  final FlutterTts _letterVoice = FlutterTts();
+  bool _voiceDisposed = false;
 
   @override
-  void initState() { super.initState(); driftController = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200))..repeat(reverse: true); createRound(resetScore: true); _loadBest(); }
+  void initState() { super.initState(); driftController = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200))..repeat(reverse: true); createRound(resetScore: true); _loadBest(); unawaited(_prepareVoice()); }
   Future<void> _loadBest() async { final value = await ScoreService.instance.getBestStreak('bubbles'); if (mounted) setState(() => bestStreak = value); }
   @override
-  void dispose() { driftController.dispose(); super.dispose(); }
+  void dispose() { _voiceDisposed = true; unawaited(_letterVoice.stop()); driftController.dispose(); super.dispose(); }
+
+  Future<void> _prepareVoice() async {
+    try {
+      await _letterVoice.setLanguage('ar-SA');
+      await _letterVoice.setSpeechRate(0.36);
+      await _letterVoice.setPitch(1.0);
+      await _letterVoice.awaitSpeakCompletion(true);
+      await _speakTarget();
+    } catch (error) {
+      debugPrint('تعذر إعداد نطق الحروف العربية: $error');
+    }
+  }
+
+  double get _voiceVolume {
+    switch (SoundService.instance.levelNotifier.value) {
+      case SoundLevel.high:
+        return 1.0;
+      case SoundLevel.medium:
+        return 0.72;
+      case SoundLevel.low:
+        return 0.42;
+      case SoundLevel.muted:
+        return 0.0;
+    }
+  }
+
+  Future<void> _speakTarget() async {
+    final volume = _voiceVolume;
+    if (_voiceDisposed || volume == 0) return;
+    final name = _arabicLetterNames[target] ?? target;
+    try {
+      await _letterVoice.stop();
+      await _letterVoice.setVolume(volume);
+      await _letterVoice.speak(name);
+    } catch (error) {
+      debugPrint('تعذر نطق الحرف $name: $error');
+    }
+  }
 
   void createRound({bool resetScore = false}) {
     target = _arabicLetters[random.nextInt(_arabicLetters.length)];
@@ -38,7 +113,7 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
     bubbles[random.nextInt(count)] = target;
     if (resetScore) { score = 0; mistakes = 0; streak = 0; }
   }
-  void newRound({bool resetScore = false}) { createRound(resetScore: resetScore); setState(() {}); }
+  void newRound({bool resetScore = false}) { createRound(resetScore: resetScore); setState(() {}); unawaited(_speakTarget()); }
 
   void pop(int index) {
     var next = false;
@@ -69,13 +144,32 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
             Container(
               height: 116,
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(color: const Color(0xFFE0F7FA), borderRadius: BorderRadius.circular(26), border: Border.all(color: const Color(0xFF67E8F9), width: 2)),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-                const Text('اضغط نفس الحرف', style: TextStyle(color: Color(0xFF0E7490), fontWeight: FontWeight.w800, fontFamily: 'Changa')),
-                const SizedBox(width: 18),
-                Text(target, style: const TextStyle(color: Color(0xFF155E75), fontSize: 76, fontWeight: FontWeight.w900, height: 1)),
-              ]),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => unawaited(_speakTarget()),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        const Text('اضغط نفس الحرف', style: TextStyle(color: Color(0xFF0E7490), fontWeight: FontWeight.w800, fontFamily: 'Changa')),
+                        const SizedBox(height: 5),
+                        Row(
+                          children: <Widget>[
+                            const Icon(Icons.volume_up_rounded, color: Color(0xFF0891B2), size: 20),
+                            const SizedBox(width: 5),
+                            Text(_arabicLetterNames[target] ?? target, style: const TextStyle(color: Color(0xFF0891B2), fontWeight: FontWeight.w900, fontFamily: 'Changa')),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 18),
+                    Text(target, style: const TextStyle(color: Color(0xFF155E75), fontSize: 76, fontWeight: FontWeight.w900, height: 1)),
+                  ]),
+                ),
+              ),
             ),
             const SizedBox(height: 6),
             Align(alignment: AlignmentDirectional.centerStart, child: Text('الأخطاء: $mistakes', style: const TextStyle(color: Color(0xFF64748B)))),

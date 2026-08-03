@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import '../services/score_service.dart';
 import '../services/sound_service.dart';
@@ -30,9 +32,28 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
   int colorIndex = 0;
   double progress = 0;
   bool completed = false;
+  final FlutterTts _letterVoice = FlutterTts();
+  bool _voiceDisposed = false;
 
   String get letter => letters[letterIndex];
   Color get selectedColor => colors[colorIndex];
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_prepareLetterVoice());
+  }
+
+  Future<void> _prepareLetterVoice() async {
+    try {
+      await _letterVoice.setLanguage('en-US');
+      await _letterVoice.setSpeechRate(0.38);
+      await _letterVoice.setPitch(1.0);
+      await _letterVoice.awaitSpeakCompletion(true);
+    } catch (error) {
+      debugPrint('تعذر إعداد نطق الحروف: $error');
+    }
+  }
 
   void _handleTrace(Offset point, Size size) {
     final hit = LetterTraceMath.hitProgress(letter, size, point);
@@ -46,6 +67,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
       completed = true;
       ScoreService.instance.addStars(2);
       SoundService.instance.play('win.wav');
+      unawaited(_sayLetterValue(letter, afterCelebration: true));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('أحسنت! أتممت مسار حرف $letter')),
@@ -80,11 +102,46 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
     SoundService.instance.play('click.wav');
   }
 
+  double get _voiceVolume {
+    switch (SoundService.instance.levelNotifier.value) {
+      case SoundLevel.high:
+        return 1.0;
+      case SoundLevel.medium:
+        return 0.72;
+      case SoundLevel.low:
+        return 0.42;
+      case SoundLevel.muted:
+        return 0.0;
+    }
+  }
+
+  Future<void> _sayLetterValue(String value, {bool afterCelebration = false}) async {
+    if (_voiceVolume == 0 || _voiceDisposed) return;
+    if (afterCelebration) {
+      await Future<void>.delayed(const Duration(milliseconds: 650));
+    } else {
+      await SoundService.instance.play('tap.wav');
+    }
+    final volume = _voiceVolume;
+    if (volume == 0 || _voiceDisposed) return;
+    try {
+      await _letterVoice.stop();
+      await _letterVoice.setVolume(volume);
+      await _letterVoice.speak(value);
+    } catch (error) {
+      debugPrint('تعذر نطق الحرف $value: $error');
+    }
+  }
+
   void _sayLetter() {
-    SoundService.instance.play('tap.wav');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('الحرف الحالي: $letter')),
-    );
+    unawaited(_sayLetterValue(letter));
+  }
+
+  @override
+  void dispose() {
+    _voiceDisposed = true;
+    unawaited(_letterVoice.stop());
+    super.dispose();
   }
 
   @override
@@ -153,6 +210,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
                   Expanded(child: OutlinedButton.icon(onPressed: _next, icon: const Icon(Icons.arrow_forward_rounded), label: const Text('التالي'))),
                 ],
               ),
+              const SizedBox(height: 8),
             ],
           ),
         ),

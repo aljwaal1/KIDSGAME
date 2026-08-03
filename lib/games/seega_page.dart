@@ -17,12 +17,30 @@ class _SeegaPageState extends State<SeegaPage> {
   int player = 1;
   int redPlaced = 0;
   int bluePlaced = 0;
+  int placedThisTurn = 0;
   int? selected;
   int redWins = 0;
   int blueWins = 0;
   String message = 'ضع الحصى على اللوحة';
 
-  bool get placingPhase => redPlaced < 6 || bluePlaced < 6;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _showInstructions();
+    });
+  }
+
+  void _showInstructions() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => const _SeegaInstructions(),
+    );
+  }
+
+  bool get placingPhase => redPlaced < 12 || bluePlaced < 12;
   String get playerName => player == 1 ? 'الأحمر' : 'الأزرق';
   Color get playerColor => player == 1 ? const Color(0xFFDC2626) : const Color(0xFF2563EB);
 
@@ -34,6 +52,7 @@ class _SeegaPageState extends State<SeegaPage> {
       player = 1;
       redPlaced = 0;
       bluePlaced = 0;
+      placedThisTurn = 0;
       selected = null;
       message = 'ضع الحصى على اللوحة';
     });
@@ -55,10 +74,19 @@ class _SeegaPageState extends State<SeegaPage> {
       setState(() {
         board[index] = player;
         if (player == 1) redPlaced++; else bluePlaced++;
+        placedThisTurn++;
       });
       await SoundService.instance.play('move.wav');
-      await checkSimpleTrap(index);
-      nextTurn();
+      if (!placingPhase) {
+        setState(() {
+          placedThisTurn = 0;
+          message = 'حرّك حصاة وحاول الأكل';
+        });
+      } else if (placedThisTurn >= 2 || (player == 1 ? redPlaced >= 12 : bluePlaced >= 12)) {
+        nextTurn();
+      } else {
+        setState(() => message = 'ضع الحصاة الثانية');
+      }
       return;
     }
 
@@ -91,26 +119,29 @@ class _SeegaPageState extends State<SeegaPage> {
       selected = null;
     });
     await SoundService.instance.play('move.wav');
-    await checkSimpleTrap(index);
-    nextTurn();
+    final captured = await checkSimpleTrap(index);
+    if (captured) {
+      setState(() => message = 'أكلت حصاة — العب مرة أخرى');
+    } else {
+      nextTurn();
+    }
   }
 
-  Future<void> checkSimpleTrap(int index) async {
+  Future<bool> checkSimpleTrap(int index) async {
     final enemy = player == 1 ? 2 : 1;
     final r = rowOf(index);
     final c = colOf(index);
     final captures = <int>[];
 
-    final pairs = <List<int>>[
-      <int>[index - 1, index + 1],
-      <int>[index - 5, index + 5],
-    ];
-
-    for (final pair in pairs) {
-      if (pair.any((p) => p < 0 || p >= 25)) continue;
-      if ((pair[0] ~/ 5 != r && pair[1] ~/ 5 != r) && (pair[0] % 5 != c && pair[1] % 5 != c)) continue;
-      if (board[pair[0]] == enemy && board[pair[1]] == player) captures.add(pair[0]);
-      if (board[pair[1]] == enemy && board[pair[0]] == player) captures.add(pair[1]);
+    for (final direction in const <List<int>>[<int>[-1, 0], <int>[1, 0], <int>[0, -1], <int>[0, 1]]) {
+      final enemyRow = r + direction[0];
+      final enemyCol = c + direction[1];
+      final ownRow = r + direction[0] * 2;
+      final ownCol = c + direction[1] * 2;
+      if (enemyRow < 0 || enemyRow >= 5 || enemyCol < 0 || enemyCol >= 5 || ownRow < 0 || ownRow >= 5 || ownCol < 0 || ownCol >= 5) continue;
+      final enemyIndex = enemyRow * 5 + enemyCol;
+      final ownIndex = ownRow * 5 + ownCol;
+      if (enemyIndex != 12 && board[enemyIndex] == enemy && board[ownIndex] == player) captures.add(enemyIndex);
     }
 
     if (captures.isNotEmpty) {
@@ -120,7 +151,6 @@ class _SeegaPageState extends State<SeegaPage> {
         }
       });
       await SoundService.instance.play('pop.wav');
-      message = 'أكلت حصاة!';
     }
 
     final red = board.where((v) => v == 1).length;
@@ -134,11 +164,13 @@ class _SeegaPageState extends State<SeegaPage> {
       }
       reset();
     }
+    return captures.isNotEmpty;
   }
 
   void nextTurn() {
     setState(() {
       player = player == 1 ? 2 : 1;
+      placedThisTurn = 0;
       selected = null;
       message = placingPhase ? 'ضع الحصى على اللوحة' : 'حرّك حصاة وحاول الأكل';
     });
@@ -149,13 +181,15 @@ class _SeegaPageState extends State<SeegaPage> {
     final redCount = board.where((v) => v == 1).length;
     final blueCount = board.where((v) => v == 2).length;
     return Scaffold(
-      appBar: AppBar(title: const Text('السيجا'), actions: <Widget>[IconButton(onPressed: reset, icon: const Icon(Icons.refresh_rounded))]),
+      appBar: AppBar(title: const Text('السيجا'), actions: <Widget>[IconButton(tooltip: 'طريقة اللعب', onPressed: _showInstructions, icon: const Icon(Icons.help_outline_rounded)), IconButton(onPressed: reset, icon: const Icon(Icons.refresh_rounded))]),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
         child: Column(
           children: <Widget>[
             _SeegaHeader(playerName: playerName, playerColor: playerColor, message: message, red: redCount, blue: blueCount, redWins: redWins, blueWins: blueWins),
-            const SizedBox(height: 10),
+            const SizedBox(height: 7),
+            _PhaseStrip(placing: placingPhase, redPlaced: redPlaced, bluePlaced: bluePlaced),
+            const SizedBox(height: 7),
             Expanded(
               child: Center(
                 child: AspectRatio(
@@ -243,6 +277,80 @@ class _SeegaHint extends StatelessWidget {
   final bool placing;
   @override
   Widget build(BuildContext context) {
-    return Container(height: 56, padding: const EdgeInsets.symmetric(horizontal: 14), decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFF93C5FD))), child: Row(children: <Widget>[const Icon(Icons.info_rounded, color: Color(0xFF2563EB)), const SizedBox(width: 8), Expanded(child: Text(placing ? 'ضع 6 حصوات لكل لاعب حول اللوحة.' : 'حرّك حصاة قريبة وحاول حصر حصاة الخصم.', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF1E3A8A), fontWeight: FontWeight.w700)))]));
+    return Container(height: 56, padding: const EdgeInsets.symmetric(horizontal: 14), decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFF93C5FD))), child: Row(children: <Widget>[const Icon(Icons.info_rounded, color: Color(0xFF2563EB)), const SizedBox(width: 8), Expanded(child: Text(placing ? 'ضع حصاتين في دورك حتى يصبح لكل لاعب 12 حصاة.' : 'حرّك حصاة قريبة وحاول حصر حصاة الخصم.', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF1E3A8A), fontWeight: FontWeight.w700)))]));
+  }
+}
+
+class _PhaseStrip extends StatelessWidget {
+  const _PhaseStrip({required this.placing, required this.redPlaced, required this.bluePlaced});
+  final bool placing;
+  final int redPlaced;
+  final int bluePlaced;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+      decoration: BoxDecoration(color: placing ? const Color(0xFFFFF7ED) : const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(15), border: Border.all(color: placing ? const Color(0xFFF59E0B) : const Color(0xFF10B981))),
+      child: Row(children: <Widget>[
+        CircleAvatar(radius: 15, backgroundColor: placing ? const Color(0xFFF59E0B) : const Color(0xFF10B981), child: Text(placing ? '1' : '2', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900))),
+        const SizedBox(width: 8),
+        Expanded(child: Text(placing ? 'مرحلة الوضع: الأحمر $redPlaced/12 • الأزرق $bluePlaced/12' : 'مرحلة اللعب: اختر حصاة ثم حرّكها خانة واحدة', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900))),
+      ]),
+    );
+  }
+}
+
+class _SeegaInstructions extends StatelessWidget {
+  const _SeegaInstructions();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 0, 18, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Text('كيف تلعب السيجا؟', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900, fontFamily: 'Changa')),
+            const SizedBox(height: 12),
+            const _InstructionStep(number: '1', icon: Icons.add_circle_outline_rounded, title: 'ضع الحصى', text: 'يضع كل لاعب حصاتين في دوره حتى يصبح لديه 12 حصاة. خانة النجمة في الوسط تبقى فارغة.'),
+            const _InstructionStep(number: '2', icon: Icons.touch_app_rounded, title: 'اختر ثم تحرّك', text: 'بعد اكتمال الوضع، اضغط حصاتك ثم اضغط خانة فارغة ملاصقة لها: أعلى أو أسفل أو يمين أو يسار.'),
+            const _InstructionStep(number: '3', icon: Icons.compress_rounded, title: 'احصر حصاة الخصم', text: 'إذا أصبحت حصاة الخصم بين حصاتين لك أفقياً أو عمودياً، تُؤكل وتلعب مرة أخرى. حصاة الوسط آمنة.'),
+            const _InstructionStep(number: '4', icon: Icons.emoji_events_rounded, title: 'الفوز', text: 'يفوز اللاعب عندما لا يبقى للخصم إلا حصاة واحدة.'),
+            const SizedBox(height: 12),
+            SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.play_arrow_rounded), label: const Text('فهمت — ابدأ اللعب'))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InstructionStep extends StatelessWidget {
+  const _InstructionStep({required this.number, required this.icon, required this.title, required this.text});
+  final String number;
+  final IconData icon;
+  final String title;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFE2E8F0))),
+      child: Row(children: <Widget>[
+        CircleAvatar(radius: 19, backgroundColor: const Color(0xFF1E3A8A), child: Text(number, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900))),
+        const SizedBox(width: 9),
+        Icon(icon, color: const Color(0xFF0F766E), size: 27),
+        const SizedBox(width: 9),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+          Text(text, style: const TextStyle(color: Color(0xFF475569), fontSize: 12, height: 1.35)),
+        ])),
+      ]),
+    );
   }
 }
