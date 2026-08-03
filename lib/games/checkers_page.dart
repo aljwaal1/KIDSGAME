@@ -28,9 +28,63 @@ class _CheckersPageState extends State<CheckersPage> {
   void _play(_Move m){SoundService.instance.play('move.wav');setState((){var piece=board[m.from];board[m.from]=0;board[m.to]=piece;if(m.captured!=null)board[m.captured!]=0;final row=m.to~/8;if(piece==1&&row==0)board[m.to]=3;if(piece==2&&row==7)board[m.to]=4;if(m.captured!=null&&_pieceMoves(m.to,capturesOnly:true).any((x)=>x.captured!=null)){selected=m.to;return;}selected=null;player=1-player;if(_allMoves(player).isEmpty){winner=1-player;confettiKey.currentState?.burst();SoundService.instance.play('win.wav');}});if(winner==null&&bot&&player==1)_bot();}
   void _bot(){timer?.cancel();timer=Timer(const Duration(milliseconds:650),(){if(!mounted||winner!=null||player!=1)return;final moves=selected!=null?_pieceMoves(selected!,capturesOnly:true).where((m)=>m.captured!=null).toList():_allMoves(1);if(moves.isEmpty)return;final captures=moves.where((m)=>m.captured!=null).toList();_play((captures.isNotEmpty?captures:moves)[random.nextInt((captures.isNotEmpty?captures:moves).length)]);});}
   @override void dispose(){timer?.cancel();super.dispose();}
-  @override Widget build(BuildContext context)=>ConfettiOverlay(key:confettiKey,child:Padding(padding:const EdgeInsets.fromLTRB(14,8,14,14),child:Column(children:[
-    GameHeader(title:'الداما',subtitle:winner!=null?'فاز ${bot&&winner==1?'الروبوت':'اللاعب ${winner!+1}'} 🎉':bot&&player==1?'الروبوت يفكر...':'دور اللاعب ${player+1}',color:const Color(0xFFB91C1C),onReset:_reset),
-    const SizedBox(height:8),Row(children:[Expanded(child:ChoiceChip(label:const Text('ضد الروبوت'),selected:bot,onSelected:(_){bot=true;_reset();})),const SizedBox(width:8),Expanded(child:ChoiceChip(label:const Text('مع صديق'),selected:!bot,onSelected:(_){bot=false;_reset();}))]),const SizedBox(height:12),
-    Expanded(child:Center(child:AspectRatio(aspectRatio:1,child:GridView.builder(physics:const NeverScrollableScrollPhysics(),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:8),itemCount:64,itemBuilder:(context,i){final dark=((i~/8+i%8).isOdd),piece=board[i],active=selected==i,target=selected!=null&&_allMoves(player).any((m)=>m.from==selected&&m.to==i);return GestureDetector(onTap:()=>_tap(i),child:Container(decoration:BoxDecoration(color:dark?const Color(0xFF6B3F2A):const Color(0xFFF3D6A4),border:target?Border.all(color:const Color(0xFF22C55E),width:4):null),child:piece==0?null:Padding(padding:const EdgeInsets.all(5),child:DecoratedBox(decoration:BoxDecoration(shape:BoxShape.circle,gradient:LinearGradient(colors:_mine(piece,0)?const [Color(0xFFFF6B6B),Color(0xFFB91C1C)]:const [Color(0xFF60A5FA),Color(0xFF1D4ED8)]),border:Border.all(color:active?Colors.amber:Colors.white,width:active?4:2),boxShadow:const [BoxShadow(color:Color(0x66000000),blurRadius:5,offset:Offset(0,3))]),child:piece>=3?const Icon(Icons.star_rounded,color:Colors.amber):null))),);})))))
-  ])));
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = winner != null
+        ? 'فاز ${bot && winner == 1 ? 'الروبوت' : 'اللاعب ${winner! + 1}'} 🎉'
+        : bot && player == 1 ? 'الروبوت يفكر...' : 'دور اللاعب ${player + 1}';
+    return ConfettiOverlay(
+      key: confettiKey,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+        child: Column(children: <Widget>[
+          GameHeader(title: 'الداما', subtitle: subtitle, color: const Color(0xFFB91C1C), onReset: _reset),
+          const SizedBox(height: 8),
+          Row(children: <Widget>[
+            Expanded(child: ChoiceChip(label: const Text('ضد الروبوت'), selected: bot, onSelected: (_) { bot = true; _reset(); })),
+            const SizedBox(width: 8),
+            Expanded(child: ChoiceChip(label: const Text('مع صديق'), selected: !bot, onSelected: (_) { bot = false; _reset(); })),
+          ]),
+          const SizedBox(height: 12),
+          Expanded(child: Center(child: AspectRatio(
+            aspectRatio: 1,
+            child: GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
+              itemCount: 64,
+              itemBuilder: (context, i) {
+                final dark = (i ~/ 8 + i % 8).isOdd;
+                final piece = board[i];
+                final active = selected == i;
+                final target = selected != null && _allMoves(player).any((m) => m.from == selected && m.to == i);
+                return GestureDetector(
+                  onTap: () => _tap(i),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: dark ? const Color(0xFF6B3F2A) : const Color(0xFFF3D6A4),
+                      border: target ? Border.all(color: const Color(0xFF22C55E), width: 4) : null,
+                    ),
+                    child: piece == 0 ? null : Padding(
+                      padding: const EdgeInsets.all(5),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(colors: _mine(piece, 0)
+                              ? const <Color>[Color(0xFFFF6B6B), Color(0xFFB91C1C)]
+                              : const <Color>[Color(0xFF60A5FA), Color(0xFF1D4ED8)]),
+                          border: Border.all(color: active ? Colors.amber : Colors.white, width: active ? 4 : 2),
+                          boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x66000000), blurRadius: 5, offset: Offset(0, 3))],
+                        ),
+                        child: piece >= 3 ? const Icon(Icons.star_rounded, color: Colors.amber) : null,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ))),
+        ]),
+      ),
+    );
+  }
 }
