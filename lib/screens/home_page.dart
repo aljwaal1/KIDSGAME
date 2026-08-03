@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../games/air_hockey_page.dart';
 import '../games/capital_letter_coloring_page.dart';
 import '../games/animal_picture_puzzle_page.dart';
+import '../games/battleship_page.dart';
+import '../games/checkers_page.dart';
 import '../games/connect_four_page.dart';
 import '../games/dahdel_page.dart';
 import '../games/dots_and_boxes_page.dart';
@@ -61,6 +64,9 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
         _GameItem(Icons.gesture_rounded, 'النقاط والمربعات', 'أصدقاء أو روبوت', const Color(0xFF7C3AED), () => _open(const DotsAndBoxesPage())),
         _GameItem(Icons.view_column_rounded, 'أربع قطع في صف', 'صديق أو روبوت', const Color(0xFF2563EB), () => _open(const ConnectFourPage())),
         _GameItem(Icons.casino_rounded, 'السلم والثعبان', 'أصدقاء أو روبوت', const Color(0xFF16A34A), () => _open(const SnakesAndLaddersPage())),
+        _GameItem(Icons.grid_on_rounded, 'الداما', 'صديق أو روبوت', const Color(0xFFB91C1C), () => _open(const CheckersPage())),
+        _GameItem(Icons.sports_hockey_rounded, 'الهوكي الهوائي', 'صديق أو روبوت', const Color(0xFF0891B2), () => _open(const AirHockeyPage())),
+        _GameItem(Icons.directions_boat_rounded, 'معركة السفن', 'صديق أو روبوت', const Color(0xFF0369A1), () => _open(const BattleshipPage())),
       ]),
       _GameSection('تراث', const Color(0xFFB45309), <_GameItem>[
         _GameItem(Icons.scatter_plot_rounded, 'الحَرّة بالحصى', 'ثلاث حصوات على خط', const Color(0xFFB45309), () => _open(const PebbleHarraPage())),

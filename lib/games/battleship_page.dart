@@ -1,0 +1,27 @@
+import 'dart:async';
+import 'dart:math';
+import 'package:flutter/material.dart';
+import '../services/sound_service.dart';
+import '../widgets/confetti_overlay.dart';
+import '../widgets/game_header.dart';
+
+class BattleshipPage extends StatefulWidget{const BattleshipPage({super.key});@override State<BattleshipPage> createState()=>_BattleshipPageState();}
+class _BattleshipPageState extends State<BattleshipPage>{
+ static const n=8;final random=Random();final confettiKey=GlobalKey<ConfettiOverlayState>();Timer? timer;bool bot=true,covered=false;int player=0;int? winner;late List<List<Set<int>>> fleets;late List<Set<int>> shots;
+ @override void initState(){super.initState();_reset();}
+ List<Set<int>> _fleet(){final ships=<Set<int>>[];for(final length in const [4,3,3,2]){while(true){final horizontal=random.nextBool(),r=random.nextInt(horizontal?n:n-length+1),c=random.nextInt(horizontal?n-length+1:n);final ship=<int>{for(var k=0;k<length;k++)(r+(horizontal?0:k))*n+c+(horizontal?k:0)};if(ships.every((s)=>s.intersection(ship).isEmpty)){ships.add(ship);break;}}}return ships;}
+ void _reset(){timer?.cancel();fleets=[_fleet(),_fleet()];shots=[<int>{},<int>{}];setState((){player=0;winner=null;covered=!bot;});}
+ void _mode(bool value){if(bot==value)return;bot=value;_reset();}
+ bool _shipAt(int owner,int cell)=>fleets[owner].any((s)=>s.contains(cell));
+ int _remaining(int owner)=>fleets[owner].where((ship)=>!ship.every(shots[1-owner].contains)).length;
+ void _fire(int cell,{bool robot=false}){if(winner!=null||covered||(bot&&player==1&&!robot)||shots[player].contains(cell))return;final hit=_shipAt(1-player,cell);setState(()=>shots[player].add(cell));SoundService.instance.play(hit?'wrong.wav':'tap.wav');if(fleets[1-player].every((ship)=>ship.every(shots[player].contains))){setState(()=>winner=player);confettiKey.currentState?.burst(count:36);SoundService.instance.play('win.wav');return;}setState((){player=1-player;covered=!bot;});if(bot)_bot();}
+ void _bot(){timer?.cancel();timer=Timer(const Duration(milliseconds:700),(){if(!mounted||winner!=null||player!=1)return;final candidates=<int>[for(var i=0;i<n*n;i++)if(!shots[1].contains(i))i];final hits=candidates.where((i){for(final d in const [-8,8,-1,1]){final x=i+d;if(x>=0&&x<64&&shots[1].contains(x)&&_shipAt(0,x))return true;}return false;}).toList();_fire((hits.isNotEmpty?hits:candidates)[random.nextInt((hits.isNotEmpty?hits:candidates).length)],robot:true);});}
+ @override void dispose(){timer?.cancel();super.dispose();}
+ @override Widget build(BuildContext context)=>ConfettiOverlay(key:confettiKey,child:Padding(padding:const EdgeInsets.fromLTRB(14,8,14,14),child:Column(children:[
+  GameHeader(title:'معركة السفن',subtitle:winner!=null?'فاز ${bot&&winner==1?'الروبوت':'اللاعب ${winner!+1}'} 🎉':covered?'سلّم الجهاز للاعب ${player+1}':'دور ${bot&&player==1?'الروبوت':'اللاعب ${player+1}'} — اختر هدفًا',color:const Color(0xFF0369A1),onReset:_reset),const SizedBox(height:7),
+  Row(children:[Expanded(child:ChoiceChip(label:const Text('ضد الروبوت'),selected:bot,onSelected:(_)=>_mode(true))),const SizedBox(width:8),Expanded(child:ChoiceChip(label:const Text('مع صديق'),selected:!bot,onSelected:(_)=>_mode(false)))]),const SizedBox(height:8),
+  Row(mainAxisAlignment:MainAxisAlignment.spaceEvenly,children:[_FleetBadge(label:'سفنك',count:_remaining(player),color:const Color(0xFF38BDF8)),_FleetBadge(label:'سفن الخصم',count:_remaining(1-player),color:const Color(0xFFF97316))]),const SizedBox(height:10),
+  Expanded(child:Center(child:AspectRatio(aspectRatio:1,child:Stack(children:[GridView.builder(physics:const NeverScrollableScrollPhysics(),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:n),itemCount:n*n,itemBuilder:(context,i){final fired=shots[player].contains(i),hit=fired&&_shipAt(1-player,i);return GestureDetector(onTap:()=>_fire(i),child:AnimatedContainer(duration:const Duration(milliseconds:180),margin:const EdgeInsets.all(1),decoration:BoxDecoration(gradient:const LinearGradient(colors:[Color(0xFF0EA5E9),Color(0xFF075985)],begin:Alignment.topLeft,end:Alignment.bottomRight),borderRadius:BorderRadius.circular(5),border:Border.all(color:const Color(0x665DEBFF))),child:fired?Icon(hit?Icons.local_fire_department_rounded:Icons.circle,color:hit?const Color(0xFFFF5A4F):Colors.white,size:hit?28:10):null));}),if(covered)Positioned.fill(child:Container(decoration:BoxDecoration(color:const Color(0xFF082F49),borderRadius:BorderRadius.circular(18)),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[const Icon(Icons.visibility_off_rounded,color:Colors.white,size:56),const SizedBox(height:14),Text('سلّم الجهاز للاعب ${player+1}',style:const TextStyle(color:Colors.white,fontSize:22,fontWeight:FontWeight.w900)),const SizedBox(height:12),FilledButton(onPressed:()=>setState(()=>covered=false),child:const Text('أنا جاهز'))]))) ])))),const SizedBox(height:7),const Text('💥 إصابة   •   ⚪ ماء',style:TextStyle(color:Color(0xFF64748B),fontWeight:FontWeight.w800))
+ ])));
+}
+class _FleetBadge extends StatelessWidget{const _FleetBadge({required this.label,required this.count,required this.color});final String label;final int count;final Color color;@override Widget build(BuildContext context)=>Container(padding:const EdgeInsets.symmetric(horizontal:15,vertical:8),decoration:BoxDecoration(color:color.withAlpha(25),borderRadius:BorderRadius.circular(16),border:Border.all(color:color)),child:Text('$label: $count',style:TextStyle(color:color,fontWeight:FontWeight.w900)));}
