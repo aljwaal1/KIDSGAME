@@ -20,12 +20,69 @@ class _BattleshipPageState extends State<BattleshipPage> {
   void _bot(){timer?.cancel();timer=Timer(const Duration(milliseconds:750),(){if(!mounted||winner!=null||player!=1)return;final open=<int>[for(var i=0;i<64;i++)if(!shots[1].contains(i))i];final near=open.where((i)=>_neighbors(i).any((x)=>shots[1].contains(x)&&_shipAt(0,x))).toList();final pool=near.isNotEmpty?near:open;_fire(pool[random.nextInt(pool.length)],robot:true);});}
   Iterable<int> _neighbors(int i) sync*{final r=i~/n,c=i%n;if(r>0)yield i-n;if(r<n-1)yield i+n;if(c>0)yield i-1;if(c<n-1)yield i+1;}
   @override void dispose(){timer?.cancel();super.dispose();}
-  @override Widget build(BuildContext context){final subtitle=placing?'رتّب أسطول اللاعب ${placingPlayer+1} ثم ابدأ':winner!=null?'فاز ${bot&&winner==1?'الروبوت':'اللاعب ${winner!+1}'} 🎉':covered?'سلّم الجهاز للاعب ${player+1}':bot&&player==1?'الروبوت يحدد الهدف...':'هاجم شبكة الخصم';return ConfettiOverlay(key:confettiKey,child:Padding(padding:const EdgeInsets.fromLTRB(14,8,14,14),child:Column(children:[
-    GameHeader(title:'معركة السفن',subtitle:subtitle,color:const Color(0xFF0369A1),onReset:_reset),const SizedBox(height:7),
-    Row(children:[Expanded(child:ChoiceChip(label:const Text('ضد الروبوت'),selected:bot,onSelected:(_)=>_mode(true))),const SizedBox(width:8),Expanded(child:ChoiceChip(label:const Text('مع صديق'),selected:!bot,onSelected:(_)=>_mode(false)))]),const SizedBox(height:8),
-    if(placing)...[const Text('هذه شبكة أسطولك — الأزرق الداكن يمثل السفن',style:TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:8),Expanded(child:Stack(children:[_Grid(owner:placingPlayer,shots:const <int>{},fleets:fleets,revealShips:true,onTap:null),if(covered)Positioned.fill(child:Container(color:const Color(0xFF082F49),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Text('سلّم الجهاز للاعب ${placingPlayer+1}',style:const TextStyle(color:Colors.white,fontSize:21,fontWeight:FontWeight.w900)),const SizedBox(height:12),FilledButton(onPressed:()=>setState(()=>covered=false),child:const Text('أنا جاهز'))]))) ])),const SizedBox(height:8),Row(children:[Expanded(child:OutlinedButton.icon(onPressed:covered?null:(){setState(()=>fleets[placingPlayer]=_fleet());},icon:const Icon(Icons.shuffle),label:const Text('توزيع جديد'))),const SizedBox(width:8),Expanded(child:FilledButton.icon(onPressed:covered?null:_confirmFleet,icon:const Icon(Icons.check),label:Text(bot||placingPlayer==1?'ابدأ المعركة':'تأكيد اللاعب 1')))])]
-    else...[Row(children:[Expanded(child:_MiniFleet(owner:player,shots:shots[1-player],fleets:fleets)),const SizedBox(width:8),Column(children:[Text('سفنك: ${_remaining(player)}',style:const TextStyle(fontWeight:FontWeight.w900)),Text('سفن الخصم: ${_remaining(1-player)}',style:const TextStyle(fontWeight:FontWeight.w900,color:Color(0xFFF97316)))])]),const SizedBox(height:8),const Text('شبكة هجومك — اضغط مربعًا لإطلاق النار',style:TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:7),Expanded(child:Stack(children:[_Grid(owner:1-player,shots:shots[player],fleets:fleets,revealShips:false,onTap:_fire),if(covered)Positioned.fill(child:Container(color:const Color(0xFF082F49),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[const Icon(Icons.visibility_off,color:Colors.white,size:54),Text('سلّم الجهاز للاعب ${player+1}',style:const TextStyle(color:Colors.white,fontSize:21,fontWeight:FontWeight.w900)),const SizedBox(height:12),FilledButton(onPressed:()=>setState(()=>covered=false),child:const Text('أنا جاهز'))]))) ]))]
-  ]))));}
+  Widget _cover(String text) => Positioned.fill(child: Container(
+    color: const Color(0xFF082F49),
+    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+      const Icon(Icons.visibility_off, color: Colors.white, size: 54),
+      Text(text, style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 12),
+      FilledButton(onPressed: () => setState(() => covered = false), child: const Text('أنا جاهز')),
+    ]),
+  ));
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = placing ? 'رتّب أسطول اللاعب ${placingPlayer + 1} ثم ابدأ'
+        : winner != null ? 'فاز ${bot && winner == 1 ? 'الروبوت' : 'اللاعب ${winner! + 1}'} 🎉'
+        : covered ? 'سلّم الجهاز للاعب ${player + 1}'
+        : bot && player == 1 ? 'الروبوت يحدد الهدف...' : 'هاجم شبكة الخصم';
+    return ConfettiOverlay(
+      key: confettiKey,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+        child: Column(children: <Widget>[
+          GameHeader(title: 'معركة السفن', subtitle: subtitle, color: const Color(0xFF0369A1), onReset: _reset),
+          const SizedBox(height: 7),
+          Row(children: <Widget>[
+            Expanded(child: ChoiceChip(label: const Text('ضد الروبوت'), selected: bot, onSelected: (_) => _mode(true))),
+            const SizedBox(width: 8),
+            Expanded(child: ChoiceChip(label: const Text('مع صديق'), selected: !bot, onSelected: (_) => _mode(false))),
+          ]),
+          const SizedBox(height: 8),
+          if (placing) ...<Widget>[
+            const Text('هذه شبكة أسطولك — الأزرق الداكن يمثل السفن', style: TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Expanded(child: Stack(children: <Widget>[
+              _Grid(owner: placingPlayer, shots: const <int>{}, fleets: fleets, revealShips: true, onTap: null),
+              if (covered) _cover('سلّم الجهاز للاعب ${placingPlayer + 1}'),
+            ])),
+            const SizedBox(height: 8),
+            Row(children: <Widget>[
+              Expanded(child: OutlinedButton.icon(onPressed: covered ? null : () => setState(() => fleets[placingPlayer] = _fleet()), icon: const Icon(Icons.shuffle), label: const Text('توزيع جديد'))),
+              const SizedBox(width: 8),
+              Expanded(child: FilledButton.icon(onPressed: covered ? null : _confirmFleet, icon: const Icon(Icons.check), label: Text(bot || placingPlayer == 1 ? 'ابدأ المعركة' : 'تأكيد اللاعب 1'))),
+            ]),
+          ] else ...<Widget>[
+            Row(children: <Widget>[
+              Expanded(child: _MiniFleet(owner: player, shots: shots[1 - player], fleets: fleets)),
+              const SizedBox(width: 8),
+              Column(children: <Widget>[
+                Text('سفنك: ${_remaining(player)}', style: const TextStyle(fontWeight: FontWeight.w900)),
+                Text('سفن الخصم: ${_remaining(1 - player)}', style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFFF97316))),
+              ]),
+            ]),
+            const SizedBox(height: 8),
+            const Text('شبكة هجومك — اضغط مربعًا لإطلاق النار', style: TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 7),
+            Expanded(child: Stack(children: <Widget>[
+              _Grid(owner: 1 - player, shots: shots[player], fleets: fleets, revealShips: false, onTap: _fire),
+              if (covered) _cover('سلّم الجهاز للاعب ${player + 1}'),
+            ])),
+          ],
+        ]),
+      ),
+    );
+  }
 }
 class _Grid extends StatelessWidget{const _Grid({required this.owner,required this.shots,required this.fleets,required this.revealShips,required this.onTap});final int owner;final Set<int> shots;final List<List<Set<int>>> fleets;final bool revealShips;final ValueChanged<int>? onTap;bool ship(int i)=>fleets[owner].any((s)=>s.contains(i));@override Widget build(BuildContext context)=>AspectRatio(aspectRatio:1,child:GridView.builder(physics:const NeverScrollableScrollPhysics(),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:8),itemCount:64,itemBuilder:(context,i){final fired=shots.contains(i),hit=fired&&ship(i),show=ship(i)&&revealShips;return GestureDetector(onTap:onTap==null?null:()=>onTap!(i),child:Container(margin:const EdgeInsets.all(1),decoration:BoxDecoration(color:show?const Color(0xFF0F3554):const Color(0xFF0284C7),borderRadius:BorderRadius.circular(4),border:Border.all(color:const Color(0x665DEBFF))),child:fired?Icon(hit?Icons.close_rounded:Icons.circle,color:hit?Colors.redAccent:Colors.white,size:hit?28:9):show?const Icon(Icons.directions_boat,color:Colors.white,size:18):null));}));}
 class _MiniFleet extends StatelessWidget{const _MiniFleet({required this.owner,required this.shots,required this.fleets});final int owner;final Set<int> shots;final List<List<Set<int>>> fleets;@override Widget build(BuildContext context)=>SizedBox(width:112,height:112,child:_Grid(owner:owner,shots:shots,fleets:fleets,revealShips:true,onTap:null));}
