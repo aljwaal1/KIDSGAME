@@ -139,45 +139,77 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
   void dispose() { botTimer?.cancel(); super.dispose(); }
 
   @override
-  Widget build(BuildContext context) => ConfettiOverlay(
-    key: confettiKey,
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-      child: Column(children: <Widget>[
-        GameHeader(title: 'النقاط والمربعات', subtitle: message, color: const Color(0xFF7C3AED), onReset: _reset),
-        const SizedBox(height: 8),
-        Row(children: <Widget>[
-          Expanded(child: ChoiceChip(label: const Text('مع الأصدقاء'), selected: !botMode, onSelected: (_) => _setBotMode(false))),
-          const SizedBox(width: 8),
-          Expanded(child: ChoiceChip(label: const Text('ضد الروبوت'), selected: botMode, onSelected: (_) => _setBotMode(true))),
-        ]),
-        const SizedBox(height: 6),
-        Row(children: <Widget>[
-          const Text('عدد اللاعبين:', style: TextStyle(fontWeight: FontWeight.w800)),
-          const SizedBox(width: 8),
-          for (var count = 2; count <= 4; count++) Padding(
-            padding: const EdgeInsetsDirectional.only(start: 5),
-            child: ChoiceChip(label: Text('$count'), selected: playerCount == count, onSelected: (_) => _setPlayers(count)),
-          ),
-        ]),
-        const SizedBox(height: 8),
-        Wrap(spacing: 7, runSpacing: 5, alignment: WrapAlignment.center, children: <Widget>[
-          for (var i = 0; i < playerCount; i++) Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-            decoration: BoxDecoration(color: colors[i].withAlpha(player == i && !finished ? 45 : 18), borderRadius: BorderRadius.circular(13), border: Border.all(color: colors[i], width: player == i && !finished ? 2.5 : 1)),
-            child: Text('اللاعب ${i + 1}: ${scores[i]}', style: TextStyle(color: colors[i], fontWeight: FontWeight.w900)),
-          ),
-        ]),
-        const SizedBox(height: 10),
-        Expanded(child: Center(child: AspectRatio(aspectRatio: 1, child: LayoutBuilder(builder: (context, constraints) {
-          final size = Size.square(constraints.maxWidth);
-          return GestureDetector(behavior: HitTestBehavior.opaque, onTapDown: (d) => _tap(d, size), child: CustomPaint(size: size, painter: _DotsPainter(h, v, owners)));
-        })))),
-        const SizedBox(height: 6),
-        const Text('اضغط بين نقطتين لرسم خط', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w700)),
-      ]),
-    ),
-  );
+  Widget build(BuildContext context) {
+    return ConfettiOverlay(
+      key: confettiKey,
+      child: LayoutBuilder(builder: (context, page) {
+        final boardSize = min(page.maxWidth - 52, 320.0).toDouble();
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 18),
+          child: Column(children: <Widget>[
+            GameHeader(title: 'النقاط والمربعات', subtitle: message, color: const Color(0xFF7C3AED), onReset: _reset),
+            const SizedBox(height: 8),
+            Row(children: <Widget>[
+              Expanded(child: ChoiceChip(label: const Text('مع الأصدقاء'), selected: !botMode, onSelected: (_) => _setBotMode(false))),
+              const SizedBox(width: 8),
+              Expanded(child: ChoiceChip(label: const Text('ضد الروبوت'), selected: botMode, onSelected: (_) => _setBotMode(true))),
+            ]),
+            const SizedBox(height: 6),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+              const Text('اللاعبون', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+              const SizedBox(width: 6),
+              for (var count = 2; count <= 4; count++) Padding(
+                padding: const EdgeInsetsDirectional.only(start: 4),
+                child: ChoiceChip(
+                  visualDensity: VisualDensity.compact,
+                  label: Text('$count'),
+                  selected: playerCount == count,
+                  onSelected: (_) => _setPlayers(count),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: const Color(0xFFC4B5FD), width: 3),
+                boxShadow: const <BoxShadow>[BoxShadow(color: Color(0x337C3AED), blurRadius: 16, offset: Offset(0, 8))],
+              ),
+              child: SizedBox(
+                width: boardSize,
+                height: boardSize,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapDown: (details) => _tap(details, Size.square(boardSize)),
+                  child: CustomPaint(size: Size.square(boardSize), painter: _DotsPainter(h, v, owners)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(16)),
+              child: const Row(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                Icon(Icons.touch_app_rounded, color: Color(0xFF7C3AED), size: 20),
+                SizedBox(width: 6),
+                Flexible(child: Text('اضغط بين نقطتين لرسم خط، وأغلق مربعًا لتحصل على نقطة', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF4C1D95), fontWeight: FontWeight.w800, fontSize: 12))),
+              ]),
+            ),
+            const SizedBox(height: 9),
+            Wrap(spacing: 7, runSpacing: 5, alignment: WrapAlignment.center, children: <Widget>[
+              for (var i = 0; i < playerCount; i++) Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: colors[i].withAlpha(player == i && !finished ? 45 : 18), borderRadius: BorderRadius.circular(13), border: Border.all(color: colors[i], width: player == i && !finished ? 2.5 : 1)),
+                child: Text('${botMode && i > 0 ? 'الروبوت' : 'اللاعب ${i + 1}'}: ${scores[i]}', style: TextStyle(color: colors[i], fontWeight: FontWeight.w900, fontSize: 13)),
+              ),
+            ]),
+          ]),
+        );
+      }),
+    );
+  }
 }
 
 class _DotsPainter extends CustomPainter {
