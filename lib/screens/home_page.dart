@@ -12,6 +12,7 @@ import '../games/memory_pairs_page.dart';
 import '../games/mini_sudoku_page.dart';
 import '../games/odd_one_out_page.dart';
 import '../games/pattern_challenge_page.dart';
+import '../games/penalty_shootout_page.dart';
 import '../games/pebble_harra_page.dart';
 import '../games/quick_math_page.dart';
 import '../games/ring_guess_page.dart';
@@ -67,6 +68,7 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
         _GameItem(Icons.grid_on_rounded, 'الداما', 'صديق أو روبوت', const Color(0xFFB91C1C), () => _open(const CheckersPage())),
         _GameItem(Icons.sports_hockey_rounded, 'الهوكي الهوائي', 'صديق أو روبوت', const Color(0xFF0891B2), () => _open(const AirHockeyPage())),
         _GameItem(Icons.directions_boat_rounded, 'معركة السفن', 'صديق أو روبوت', const Color(0xFF0369A1), () => _open(const BattleshipPage())),
+        _GameItem(Icons.sports_soccer_rounded, 'ركلات الترجيح', 'حارس وتسديد', const Color(0xFF15803D), () => _open(const PenaltyShootoutPage())),
       ]),
       _GameSection('تراث', const Color(0xFFB45309), <_GameItem>[
         _GameItem(Icons.scatter_plot_rounded, 'الحَرّة بالحصى', 'ثلاث حصوات على خط', const Color(0xFFB45309), () => _open(const PebbleHarraPage())),
@@ -185,15 +187,17 @@ class _GamesGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxRows = items.length <= 4 ? 2 : 3;
+        final maxRows = (items.length / 2).ceil();
         final cardHeight = ((constraints.maxHeight - ((maxRows - 1) * 8)) / maxRows).clamp(70.0, 108.0).toDouble();
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: <Widget>[
-            for (final item in items)
-              SizedBox(width: (constraints.maxWidth - 8) / 2, height: cardHeight, child: _CompactGameCard(item: item)),
-          ],
+        return SingleChildScrollView(
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              for (final item in items)
+                SizedBox(width: (constraints.maxWidth - 8) / 2, height: cardHeight, child: _CompactGameCard(item: item)),
+            ],
+          ),
         );
       },
     );
