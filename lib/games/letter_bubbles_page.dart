@@ -61,6 +61,7 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
   final GlobalKey<ConfettiOverlayState> confettiKey = GlobalKey<ConfettiOverlayState>();
   final FlutterTts _letterVoice = FlutterTts();
   bool _voiceDisposed = false;
+  String _voiceLanguage = 'ar-SA';
 
   @override
   void initState() { super.initState(); driftController = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200))..repeat(reverse: true); createRound(resetScore: true); _loadBest(); unawaited(_prepareVoice()); }
@@ -70,7 +71,15 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
 
   Future<void> _prepareVoice() async {
     try {
-      await _letterVoice.setLanguage('ar-SA');
+      final dynamic availableLanguages = await _letterVoice.getLanguages;
+      final languages = availableLanguages is List
+          ? availableLanguages.map((value) => value.toString()).toList()
+          : const <String>[];
+      _voiceLanguage = <String>['ar-SA', 'ar', 'ar-EG', 'ar-AE'].firstWhere(
+        (candidate) => languages.any((available) => available.toLowerCase() == candidate.toLowerCase()),
+        orElse: () => 'ar-SA',
+      );
+      await _letterVoice.setLanguage(_voiceLanguage);
       await _letterVoice.setSpeechRate(0.36);
       await _letterVoice.setPitch(1.0);
       await _letterVoice.awaitSpeakCompletion(true);
@@ -85,9 +94,9 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
       case SoundLevel.high:
         return 1.0;
       case SoundLevel.medium:
-        return 0.72;
+        return 1.0;
       case SoundLevel.low:
-        return 0.42;
+        return 0.72;
       case SoundLevel.muted:
         return 0.0;
     }
@@ -99,6 +108,7 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
     final name = _arabicLetterNames[target] ?? target;
     try {
       await _letterVoice.stop();
+      await _letterVoice.setLanguage(_voiceLanguage);
       await _letterVoice.setVolume(volume);
       await _letterVoice.speak(name);
     } catch (error) {

@@ -164,19 +164,24 @@ class _PenaltyShootoutPageState extends State<PenaltyShootoutPage>
 
   @override
   Widget build(BuildContext context) {
-    return ConfettiOverlay(
-      key: _confettiKey,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Column(
-          children: <Widget>[
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+      // Large system fonts must not break the scoreboard or shrink the pitch.
+      // This game uses large, high-contrast controls of its own.
+      data: media.copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: ConfettiOverlay(
+        key: _confettiKey,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+          child: Column(
+            children: <Widget>[
             GameHeader(
               title: 'ركلات الترجيح',
               subtitle: _instruction,
               color: const Color(0xFF087F5B),
               onReset: _reset,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Row(
               children: <Widget>[
                 Expanded(
@@ -198,7 +203,7 @@ class _PenaltyShootoutPageState extends State<PenaltyShootoutPage>
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             _ScoreBoard(
               playerOneGoals: _playerOneGoals,
               playerTwoGoals: _playerTwoGoals,
@@ -206,7 +211,7 @@ class _PenaltyShootoutPageState extends State<PenaltyShootoutPage>
               playerTwoKicks: _playerTwoKicks,
               opponentName: _againstBot ? 'الروبوت' : 'اللاعب 2',
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Expanded(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(24),
@@ -223,14 +228,29 @@ class _PenaltyShootoutPageState extends State<PenaltyShootoutPage>
                       child: Stack(
                         fit: StackFit.expand,
                         children: <Widget>[
+                          Image.asset(
+                            'assets/images/puzzle/penalty_stadium_v2.png',
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
+                            filterQuality: FilterQuality.high,
+                          ),
+                          _GoalkeeperSprite(
+                            size: size,
+                            zone: _keeperZone,
+                            progress: Curves.easeInOutCubic.transform(
+                              _kickAnimation.value,
+                            ),
+                          ),
                           CustomPaint(
                             painter: _PenaltyPitchPainter(
-                              shotZone: _shotZone,
-                              keeperZone: _keeperZone,
-                              progress: Curves.easeInOutCubic.transform(
-                                _kickAnimation.value,
-                              ),
                               showTargets: !_animating && !_handoffCover,
+                            ),
+                          ),
+                          _BallSprite(
+                            size: size,
+                            zone: _shotZone,
+                            progress: Curves.easeInOutCubic.transform(
+                              _kickAnimation.value,
                             ),
                           ),
                           if (_resultText != null)
@@ -271,7 +291,8 @@ class _PenaltyShootoutPageState extends State<PenaltyShootoutPage>
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -330,7 +351,8 @@ class _ModeButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 9),
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFF087F5B) : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -345,7 +367,10 @@ class _ModeButton extends StatelessWidget {
             const SizedBox(width: 7),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
+                fontSize: 14,
                 color: selected ? Colors.white : const Color(0xFF374151),
                 fontWeight: FontWeight.w900,
               ),
@@ -375,14 +400,15 @@ class _ScoreBoard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      height: 92,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         children: <Widget>[
-          Expanded(child: _team('أنت', playerOneGoals, playerOneKicks, const Color(0xFF34D399))),
+          Expanded(child: _team('أنت', playerOneKicks, const Color(0xFF34D399))),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             decoration: BoxDecoration(
@@ -390,20 +416,21 @@ class _ScoreBoard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              '$playerOneGoals  -  $playerTwoGoals',
-              style: const TextStyle(color: Colors.white, fontSize: 25, fontWeight: FontWeight.w900),
+              '$playerOneGoals  :  $playerTwoGoals',
+              maxLines: 1,
+              style: const TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w900),
             ),
           ),
-          Expanded(child: _team(opponentName, playerTwoGoals, playerTwoKicks, const Color(0xFFF87171))),
+          Expanded(child: _team(opponentName, playerTwoKicks, const Color(0xFFF87171))),
         ],
       ),
     );
   }
 
-  Widget _team(String name, int goals, int kicks, Color color) {
+  Widget _team(String name, int kicks, Color color) {
     return Column(
       children: <Widget>[
-        Text(name, style: TextStyle(color: color, fontWeight: FontWeight.w900)),
+        Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w900)),
         const SizedBox(height: 3),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -425,142 +452,95 @@ class _ScoreBoard extends StatelessWidget {
   }
 }
 
-class _PenaltyPitchPainter extends CustomPainter {
-  const _PenaltyPitchPainter({
-    required this.shotZone,
-    required this.keeperZone,
+class _GoalkeeperSprite extends StatelessWidget {
+  const _GoalkeeperSprite({
+    required this.size,
+    required this.zone,
     required this.progress,
-    required this.showTargets,
   });
 
-  final int? shotZone;
-  final int? keeperZone;
+  final Size size;
+  final int? zone;
   final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final targetX = zone == null ? .5 : (.25 + zone! * .25);
+    final x = .5 + (targetX - .5) * progress;
+    final y = .48 - .08 * progress;
+    final width = size.width * .31;
+    final height = size.height * .37;
+    final direction = (zone ?? 1) - 1;
+    return Positioned(
+      left: x * size.width - width / 2,
+      top: y * size.height - height / 2,
+      width: width,
+      height: height,
+      child: Transform.rotate(
+        angle: direction * .48 * progress,
+        child: Image.asset(
+          'assets/images/puzzle/penalty_keeper_v2.png',
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+        ),
+      ),
+    );
+  }
+}
+
+class _BallSprite extends StatelessWidget {
+  const _BallSprite({
+    required this.size,
+    required this.zone,
+    required this.progress,
+  });
+
+  final Size size;
+  final int? zone;
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final start = Offset(size.width * .5, size.height * .84);
+    final target = Offset(
+      size.width * (.10 + .80 * (((zone ?? 1) + .5) / 3)),
+      size.height * .424,
+    );
+    final position = zone == null ? start : Offset.lerp(start, target, progress)!;
+    final diameter = size.width * (.115 - .045 * progress);
+    return Positioned(
+      left: position.dx - diameter / 2,
+      top: position.dy - diameter / 2,
+      width: diameter,
+      height: diameter,
+      child: Transform.rotate(
+        angle: progress * math.pi * 4,
+        child: Image.asset(
+          'assets/images/puzzle/penalty_ball_v2.png',
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+        ),
+      ),
+    );
+  }
+}
+
+class _PenaltyPitchPainter extends CustomPainter {
+  const _PenaltyPitchPainter({required this.showTargets});
+
   final bool showTargets;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final stadiumHeight = size.height * 0.25;
-    final crowd = Rect.fromLTWH(0, 0, size.width, stadiumHeight);
-    canvas.drawRect(
-      crowd,
-      Paint()
-        ..shader = const LinearGradient(
-          colors: <Color>[Color(0xFF0F172A), Color(0xFF334155)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ).createShader(crowd),
-    );
-    _drawCrowd(canvas, crowd, size);
-
-    final field = Rect.fromLTWH(0, stadiumHeight, size.width, size.height - stadiumHeight);
-    canvas.drawRect(field, Paint()..color = const Color(0xFF159447));
-    for (var i = 0; i < 7; i++) {
-      final stripe = Rect.fromLTWH(
-        i * size.width / 7,
-        stadiumHeight,
-        size.width / 7,
-        field.height,
-      );
-      canvas.drawRect(
-        stripe,
-        Paint()..color = i.isEven ? const Color(0x1814532D) : const Color(0x10000000),
-      );
-    }
-
     final goal = Rect.fromLTWH(
-      size.width * 0.09,
-      size.height * 0.22,
-      size.width * 0.82,
-      size.height * 0.42,
+      size.width * 0.10,
+      size.height * 0.27,
+      size.width * 0.80,
+      size.height * 0.28,
     );
-    _drawGoal(canvas, goal, size);
-    _drawPenaltyArea(canvas, size, goal);
 
     if (showTargets) _drawTargets(canvas, goal);
 
-    final keeperStart = Offset(goal.center.dx, goal.bottom - size.height * 0.07);
-    final keeperEnd = Offset(
-      goal.left + goal.width * (((keeperZone ?? 1) + 0.5) / 3),
-      goal.top + goal.height * 0.60,
-    );
-    final keeperPosition = keeperZone == null
-        ? keeperStart
-        : Offset.lerp(keeperStart, keeperEnd, progress)!;
-    _drawKeeper(canvas, keeperPosition, size, keeperZone, progress);
-
-    final ballStart = Offset(size.width * 0.5, size.height * 0.88);
-    final ballEnd = Offset(
-      goal.left + goal.width * (((shotZone ?? 1) + 0.5) / 3),
-      goal.top + goal.height * 0.55,
-    );
-    final ballPosition = shotZone == null
-        ? ballStart
-        : Offset.lerp(ballStart, ballEnd, progress)!;
-    final ballRadius = size.width * (0.052 - progress * 0.018);
-    _drawBall(canvas, ballPosition, ballRadius);
-  }
-
-  void _drawCrowd(Canvas canvas, Rect crowd, Size size) {
-    final colors = <Color>[
-      const Color(0xFFFBBF24),
-      const Color(0xFF60A5FA),
-      const Color(0xFFF87171),
-      const Color(0xFFF8FAFC),
-    ];
-    for (var row = 0; row < 4; row++) {
-      for (var column = 0; column < 18; column++) {
-        final color = colors[(row * 5 + column * 3) % colors.length];
-        canvas.drawCircle(
-          Offset(
-            (column + 0.5) * size.width / 18,
-            crowd.top + 12 + row * crowd.height / 5,
-          ),
-          2.3,
-          Paint()..color = color.withAlpha(190),
-        );
-      }
-    }
-  }
-
-  void _drawGoal(Canvas canvas, Rect goal, Size size) {
-    final netPaint = Paint()
-      ..color = const Color(0xAAE2E8F0)
-      ..strokeWidth = 1.2;
-    for (var i = 1; i < 9; i++) {
-      final x = goal.left + goal.width * i / 9;
-      canvas.drawLine(Offset(x, goal.top), Offset(x, goal.bottom), netPaint);
-    }
-    for (var i = 1; i < 6; i++) {
-      final y = goal.top + goal.height * i / 6;
-      canvas.drawLine(Offset(goal.left, y), Offset(goal.right, y), netPaint);
-    }
-    final posts = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = math.max(5.0, size.width * 0.018)
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final frame = Path()
-      ..moveTo(goal.left, goal.bottom)
-      ..lineTo(goal.left, goal.top)
-      ..lineTo(goal.right, goal.top)
-      ..lineTo(goal.right, goal.bottom);
-    canvas.drawPath(frame, posts);
-  }
-
-  void _drawPenaltyArea(Canvas canvas, Size size, Rect goal) {
-    final line = Paint()
-      ..color = const Color(0xCCFFFFFF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2;
-    final area = Path()
-      ..moveTo(goal.left - size.width * 0.07, goal.bottom)
-      ..lineTo(size.width * 0.03, size.height)
-      ..moveTo(goal.right + size.width * 0.07, goal.bottom)
-      ..lineTo(size.width * 0.97, size.height);
-    canvas.drawPath(area, line);
-    canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.88), 3.5, Paint()..color = Colors.white);
   }
 
   void _drawTargets(Canvas canvas, Rect goal) {
@@ -587,85 +567,8 @@ class _PenaltyPitchPainter extends CustomPainter {
     }
   }
 
-  void _drawKeeper(Canvas canvas, Offset center, Size size, int? zone, double t) {
-    final diving = zone != null && t > 0.12;
-    final direction = (zone ?? 1) - 1;
-    final tilt = diving ? direction * 0.55 : 0.0;
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(tilt);
-    final scale = size.width / 390;
-    canvas.drawCircle(Offset(0, -28 * scale), 11 * scale, Paint()..color = const Color(0xFFD8A06A));
-    final shirt = Paint()..color = const Color(0xFFF97316);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset.zero, width: 30 * scale, height: 42 * scale),
-        Radius.circular(8 * scale),
-      ),
-      shirt,
-    );
-    final limb = Paint()
-      ..color = const Color(0xFFF97316)
-      ..strokeWidth = 8 * scale
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(-12 * scale, -8 * scale), Offset(-34 * scale, -23 * scale), limb);
-    canvas.drawLine(Offset(12 * scale, -8 * scale), Offset(34 * scale, -23 * scale), limb);
-    final gloves = Paint()..color = const Color(0xFFA7F3D0);
-    canvas.drawCircle(Offset(-38 * scale, -26 * scale), 7 * scale, gloves);
-    canvas.drawCircle(Offset(38 * scale, -26 * scale), 7 * scale, gloves);
-    final shorts = Paint()
-      ..color = const Color(0xFF1E3A8A)
-      ..strokeWidth = 10 * scale
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(-7 * scale, 18 * scale), Offset(-14 * scale, 42 * scale), shorts);
-    canvas.drawLine(Offset(7 * scale, 18 * scale), Offset(14 * scale, 42 * scale), shorts);
-    canvas.restore();
-  }
-
-  void _drawBall(Canvas canvas, Offset center, double radius) {
-    canvas.drawCircle(
-      center + Offset(radius * 0.16, radius * 0.22),
-      radius * 1.12,
-      Paint()..color = const Color(0x44000000),
-    );
-    canvas.drawCircle(center, radius, Paint()..color = Colors.white);
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..color = const Color(0xFF111827)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = math.max(1.5, radius * 0.1),
-    );
-    final panel = Path();
-    for (var i = 0; i < 5; i++) {
-      final angle = -math.pi / 2 + i * math.pi * 2 / 5;
-      final point = center + Offset(math.cos(angle), math.sin(angle)) * radius * 0.38;
-      if (i == 0) {
-        panel.moveTo(point.dx, point.dy);
-      } else {
-        panel.lineTo(point.dx, point.dy);
-      }
-    }
-    panel.close();
-    canvas.drawPath(panel, Paint()..color = const Color(0xFF111827));
-    for (var i = 0; i < 5; i++) {
-      final angle = -math.pi / 2 + i * math.pi * 2 / 5;
-      canvas.drawLine(
-        center + Offset(math.cos(angle), math.sin(angle)) * radius * 0.38,
-        center + Offset(math.cos(angle), math.sin(angle)) * radius * 0.86,
-        Paint()
-          ..color = const Color(0xFF374151)
-          ..strokeWidth = math.max(1.0, radius * 0.07),
-      );
-    }
-  }
-
   @override
   bool shouldRepaint(covariant _PenaltyPitchPainter oldDelegate) {
-    return oldDelegate.shotZone != shotZone ||
-        oldDelegate.keeperZone != keeperZone ||
-        oldDelegate.progress != progress ||
-        oldDelegate.showTargets != showTargets;
+    return oldDelegate.showTargets != showTargets;
   }
 }

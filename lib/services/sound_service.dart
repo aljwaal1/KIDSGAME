@@ -79,7 +79,7 @@ class SoundService {
     return (_baseVolumeFor(fileName) * _levelFactor).clamp(0.0, 1.0).toDouble();
   }
 
-  Future<bool> play(String fileName) async {
+  Future<bool> play(String fileName, {double volumeBoost = 1.0}) async {
     if (levelNotifier.value == SoundLevel.muted) return false;
 
     final player = _playerFor(fileName);
@@ -88,7 +88,7 @@ class SoundService {
       await player.stop();
       await player.play(
         AssetSource('sounds/$fileName'),
-        volume: _volumeFor(fileName),
+        volume: (_volumeFor(fileName) * volumeBoost).clamp(0.0, 1.0).toDouble(),
         mode: _celebrationSounds.contains(fileName) ? PlayerMode.mediaPlayer : PlayerMode.lowLatency,
       );
       return true;

@@ -50,6 +50,8 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
       await _letterVoice.setSpeechRate(0.38);
       await _letterVoice.setPitch(1.0);
       await _letterVoice.awaitSpeakCompletion(true);
+      await Future<void>.delayed(const Duration(milliseconds: 180));
+      await _sayLetterValue(letter);
     } catch (error) {
       debugPrint('تعذر إعداد نطق الحروف: $error');
     }
@@ -91,6 +93,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
       completed = false;
     });
     SoundService.instance.play('chime.wav');
+    unawaited(_sayLetterValue(letter, delay: const Duration(milliseconds: 180)));
   }
 
   void _previous() {
@@ -100,6 +103,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
       completed = false;
     });
     SoundService.instance.play('click.wav');
+    unawaited(_sayLetterValue(letter, delay: const Duration(milliseconds: 180)));
   }
 
   double get _voiceVolume {
@@ -107,20 +111,19 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
       case SoundLevel.high:
         return 1.0;
       case SoundLevel.medium:
-        return 0.72;
+        return 1.0;
       case SoundLevel.low:
-        return 0.42;
+        return 0.72;
       case SoundLevel.muted:
         return 0.0;
     }
   }
 
-  Future<void> _sayLetterValue(String value, {bool afterCelebration = false}) async {
+  Future<void> _sayLetterValue(String value, {bool afterCelebration = false, Duration? delay}) async {
     if (_voiceVolume == 0 || _voiceDisposed) return;
+    if (delay != null) await Future<void>.delayed(delay);
     if (afterCelebration) {
-      await Future<void>.delayed(const Duration(milliseconds: 650));
-    } else {
-      await SoundService.instance.play('tap.wav');
+      await Future<void>.delayed(const Duration(milliseconds: 320));
     }
     final volume = _voiceVolume;
     if (volume == 0 || _voiceDisposed) return;
@@ -324,8 +327,6 @@ class _TracePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFFF8FAFC));
     _drawGrid(canvas, size);
-    _drawBigLetter(canvas, size, const Color(0xFFE2E8F0), 28);
-    _drawBigLetter(canvas, size, const Color(0xFF0F172A), 10);
 
     final path = LetterTraceMath.pathFor(letter, size);
     final basePaint = Paint()
@@ -365,27 +366,6 @@ class _TracePainter extends CustomPainter {
     for (var y = 0.0; y <= size.height; y += size.height / 5) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
-  }
-
-  void _drawBigLetter(Canvas canvas, Size size, Color color, double strokeWidth) {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: letter,
-        style: TextStyle(
-          fontSize: size.shortestSide * 0.72,
-          fontWeight: FontWeight.w900,
-          fontFamily: 'Cairo',
-          height: 1,
-          foreground: Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = strokeWidth
-            ..strokeJoin = StrokeJoin.round
-            ..color = color,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    painter.paint(canvas, Offset((size.width - painter.width) / 2, (size.height - painter.height) / 2 + size.height * 0.03));
   }
 
   void _drawPartial(Canvas canvas, Path path, double progress, Paint paint) {

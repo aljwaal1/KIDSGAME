@@ -141,9 +141,11 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ConfettiOverlay(
-      key: confettiKey,
-      child: LayoutBuilder(builder: (context, page) {
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+      child: ConfettiOverlay(
+        key: confettiKey,
+        child: LayoutBuilder(builder: (context, page) {
         final boardSize = min(page.maxWidth - 52, 320.0).toDouble();
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 18),
@@ -238,7 +240,8 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
             const SizedBox(height: 8),
           ]),
         );
-      }),
+        }),
+      ),
     );
   }
 }
@@ -282,7 +285,7 @@ class _HowToPlayDots extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(color: const Color(0xFFF5F3FF), borderRadius: BorderRadius.circular(16)),
       child: const Row(children: <Widget>[
         Expanded(child: _DotRule(icon: Icons.touch_app_rounded, number: '1', text: 'المس خطاً')),
