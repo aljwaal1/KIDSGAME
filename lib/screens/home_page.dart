@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../games/air_hockey_page.dart';
 import '../games/capital_letter_coloring_page.dart';
 import '../games/animal_picture_puzzle_page.dart';
-import '../games/battleship_page.dart';
 import '../games/checkers_page.dart';
 import '../games/connect_four_page.dart';
 import '../games/dahdel_page.dart';
@@ -67,7 +66,6 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
         _GameItem(Icons.casino_rounded, 'السلم والثعبان', 'أصدقاء أو روبوت', const Color(0xFF16A34A), () => _open(const SnakesAndLaddersPage())),
         _GameItem(Icons.grid_on_rounded, 'الداما', 'صديق أو روبوت', const Color(0xFFB91C1C), () => _open(const CheckersPage())),
         _GameItem(Icons.sports_hockey_rounded, 'الهوكي الهوائي', 'صديق أو روبوت', const Color(0xFF0891B2), () => _open(const AirHockeyPage())),
-        _GameItem(Icons.directions_boat_rounded, 'معركة السفن', 'صديق أو روبوت', const Color(0xFF0369A1), () => _open(const BattleshipPage())),
         _GameItem(Icons.sports_soccer_rounded, 'ركلات الترجيح', 'حارس وتسديد', const Color(0xFF15803D), () => _open(const PenaltyShootoutPage())),
       ]),
       _GameSection('تراث', const Color(0xFFB45309), <_GameItem>[

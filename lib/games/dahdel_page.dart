@@ -20,6 +20,7 @@ class _DahdelPageState extends State<DahdelPage> {
   final List<int> _scores = <int>[0, 0];
   final List<Offset> _groundMarbles = <Offset>[];
   Timer? _botTimer;
+  DateTime _lastRollSound = DateTime.fromMillisecondsSinceEpoch(0);
 
   bool _againstBot = true;
   bool _moving = false;
@@ -46,11 +47,7 @@ class _DahdelPageState extends State<DahdelPage> {
   void _seedGround() {
     _groundMarbles
       ..clear()
-      ..addAll(<Offset>[
-        const Offset(.34, .34),
-        const Offset(.61, .45),
-        const Offset(.48, .62),
-      ]);
+      ..add(const Offset(.5, .13));
   }
 
   void _reset() {
@@ -106,7 +103,7 @@ class _DahdelPageState extends State<DahdelPage> {
       setState(() => _message = 'اسحب الجلّ إلى الأعلى باتجاه الحصى');
       return;
     }
-    _shoot(_limit(velocity, 1.75));
+    _shoot(_limit(velocity, 2.35));
   }
 
   Offset _limit(Offset value, double maximum) {
@@ -121,16 +118,20 @@ class _DahdelPageState extends State<DahdelPage> {
       _throws++;
       _message = '${robot ? 'الروبوت' : 'اللاعب ${throwingPlayer + 1}'} رمى الجلّ';
     });
-    SoundService.instance.play('move.wav');
+    SoundService.instance.play('move.wav', volumeBoost: 1.6);
 
     var position = const Offset(.5, .90);
     var velocity = initialVelocity;
     var hit = false;
-    for (var frame = 0; frame < 100; frame++) {
+    for (var frame = 0; frame < 150; frame++) {
       await Future<void>.delayed(const Duration(milliseconds: 16));
       if (!mounted) return;
       position += velocity * .016;
-      velocity *= .976;
+      velocity *= .982;
+      if (velocity.distance > .12 && DateTime.now().difference(_lastRollSound).inMilliseconds > 230) {
+        _lastRollSound = DateTime.now();
+        SoundService.instance.play('move.wav', volumeBoost: 1.45);
+      }
       if (position.dx < .035 || position.dx > .965) {
         velocity = Offset(-velocity.dx * .72, velocity.dy);
         position = Offset(position.dx.clamp(.035, .965), position.dy);
@@ -157,7 +158,9 @@ class _DahdelPageState extends State<DahdelPage> {
         _seedGround();
       });
       HapticFeedback.heavyImpact();
-      SoundService.instance.play('win.wav');
+      SoundService.instance.play('pop.wav', volumeBoost: 1.8);
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      SoundService.instance.play('win.wav', volumeBoost: 1.25);
       ScoreService.instance.addStars(2);
       await Future<void>.delayed(const Duration(milliseconds: 950));
     } else {
@@ -188,7 +191,7 @@ class _DahdelPageState extends State<DahdelPage> {
       final target = _groundMarbles[_random.nextInt(_groundMarbles.length)];
       final delta = target - const Offset(.5, .90);
       final error = Offset((_random.nextDouble() - .5) * .12, (_random.nextDouble() - .5) * .05);
-      _shoot(_limit((delta + error) * 1.55, 1.45), robot: true);
+      _shoot(_limit((delta + error) * 1.75, 1.8), robot: true);
     });
   }
 
@@ -284,16 +287,27 @@ class _DahdelPainter extends CustomPainter {
     final field = RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(24));
     canvas.drawRRect(field, Paint()..shader = const LinearGradient(colors: <Color>[Color(0xFFF7E7C6), Color(0xFFE8C98F)]).createShader(Offset.zero & size));
     canvas.drawRRect(field, Paint()..style = PaintingStyle.stroke..strokeWidth = 3..color = const Color(0xFF92400E));
+    final finishY = size.height * .075;
+    final finishPaint = Paint()
+      ..color = const Color(0xCC92400E)
+      ..strokeWidth = 2.5;
+    canvas.drawLine(Offset(size.width * .12, finishY), Offset(size.width * .88, finishY), finishPaint);
+    for (var i = 0; i < 20; i++) {
+      canvas.drawRect(
+        Rect.fromLTWH(size.width * (.12 + i * .038), finishY - 5, size.width * .038, 5),
+        Paint()..color = i.isEven ? const Color(0xFFFEF3C7) : const Color(0xFF92400E),
+      );
+    }
     for (var i = 0; i < 18; i++) {
       final x = (i * 73 % 101) / 101 * size.width;
       final y = (i * 47 % 97) / 97 * size.height;
       canvas.drawCircle(Offset(x, y), 1.4, Paint()..color = const Color(0x33854D0E));
     }
     for (var i = 0; i < groundMarbles.length; i++) {
-      _marble(canvas, _point(groundMarbles[i], size), 10, i.isEven ? const Color(0xFF2563EB) : const Color(0xFFF59E0B));
+      _marble(canvas, _point(groundMarbles[i], size), 9, i.isEven ? const Color(0xFF2563EB) : const Color(0xFFF59E0B));
     }
     final shotPoint = _point(shot, size);
-    _marble(canvas, shotPoint, 11, playerColor);
+    _marble(canvas, shotPoint, 9.5, playerColor);
     if (!moving && drag.distance > 4) {
       final end = shotPoint + drag;
       canvas.drawLine(shotPoint, end, Paint()..color = playerColor..strokeWidth = 4..strokeCap = StrokeCap.round);
