@@ -127,6 +127,8 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
     }
     final volume = _voiceVolume;
     if (volume == 0 || _voiceDisposed) return;
+    final played = await SoundService.instance.play('letter_en_${value.toUpperCase()}.wav', volumeBoost: 2.3);
+    if (played) return;
     try {
       await _letterVoice.stop();
       await _letterVoice.setVolume(volume);

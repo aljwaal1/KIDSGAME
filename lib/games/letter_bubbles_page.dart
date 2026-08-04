@@ -106,6 +106,12 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
     final volume = _voiceVolume;
     if (_voiceDisposed || volume == 0) return;
     final name = _arabicLetterNames[target] ?? target;
+    final letterNumber = _arabicLetters.indexOf(target) + 1;
+    if (letterNumber > 0) {
+      final localFile = 'letter_ar_${letterNumber.toString().padLeft(2, '0')}.wav';
+      final played = await SoundService.instance.play(localFile, volumeBoost: 2.3);
+      if (played) return;
+    }
     try {
       await _letterVoice.stop();
       await _letterVoice.setLanguage(_voiceLanguage);
