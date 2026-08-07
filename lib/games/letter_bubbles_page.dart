@@ -43,6 +43,37 @@ const Map<String, String> _arabicLetterNames = <String, String>{
   'ي': 'ياء',
 };
 
+const Map<String, String> _arabicSpokenLetterNames = <String, String>{
+  'أ': 'أَلِف',
+  'ب': 'بَاء',
+  'ت': 'تَاء',
+  'ث': 'ثَاء',
+  'ج': 'جِيم',
+  'ح': 'حَاء',
+  'خ': 'خَاء',
+  'د': 'دَال',
+  'ذ': 'ذَال',
+  'ر': 'رَاء',
+  'ز': 'زَاي',
+  'س': 'سِين',
+  'ش': 'شِين',
+  'ص': 'صَاد',
+  'ض': 'ضَاد',
+  'ط': 'طَاء',
+  'ظ': 'ظَاء',
+  'ع': 'عَيْن',
+  'غ': 'غَيْن',
+  'ف': 'فَاء',
+  'ق': 'قَاف',
+  'ك': 'كَاف',
+  'ل': 'لَام',
+  'م': 'مِيم',
+  'ن': 'نُون',
+  'ه': 'هَاء',
+  'و': 'وَاو',
+  'ي': 'يَاء',
+};
+
 class BubbleLettersPage extends StatefulWidget {
   const BubbleLettersPage({super.key});
   @override
@@ -80,7 +111,7 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
         orElse: () => 'ar-SA',
       );
       await _letterVoice.setLanguage(_voiceLanguage);
-      await _letterVoice.setSpeechRate(0.36);
+      await _letterVoice.setSpeechRate(0.48);
       await _letterVoice.setPitch(1.0);
       await _letterVoice.awaitSpeakCompletion(true);
       await _speakTarget();
@@ -105,16 +136,12 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
   Future<void> _speakTarget() async {
     final volume = _voiceVolume;
     if (_voiceDisposed || volume == 0) return;
-    final name = _arabicLetterNames[target] ?? target;
-    final letterNumber = _arabicLetters.indexOf(target) + 1;
-    if (letterNumber > 0) {
-      final localFile = 'letter_ar_${letterNumber.toString().padLeft(2, '0')}.wav';
-      final played = await SoundService.instance.play(localFile, volumeBoost: 2.3);
-      if (played) return;
-    }
+    final name = _arabicSpokenLetterNames[target] ?? _arabicLetterNames[target] ?? target;
     try {
       await _letterVoice.stop();
       await _letterVoice.setLanguage(_voiceLanguage);
+      await _letterVoice.setSpeechRate(0.48);
+      await _letterVoice.setPitch(1.0);
       await _letterVoice.setVolume(volume);
       await _letterVoice.speak(name);
     } catch (error) {
