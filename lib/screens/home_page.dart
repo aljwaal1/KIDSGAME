@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../games/air_hockey_page.dart';
+import '../games/arabic_letter_coloring_page.dart';
 import '../games/capital_letter_coloring_page.dart';
 import '../games/animal_picture_puzzle_page.dart';
 import '../games/checkers_page.dart';
@@ -58,6 +59,7 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
         _GameItem(Icons.sort_rounded, 'رتّب التسلسل', 'رتب العناصر', const Color(0xFFEF4444), () => _open(const SequenceOrderPage())),
       ]),
       _GameSection('التعليم', const Color(0xFF4F46E5), <_GameItem>[
+        _GameItem(Icons.brush_rounded, 'تلوين الحروف العربية', 'لوّن داخل الحرف', const Color(0xFF0F766E), () => _open(const ArabicLetterColoringPage())),
         _GameItem(Icons.draw_rounded, 'تلوين الحروف الكبيرة', 'اتبع السهم', const Color(0xFF4F46E5), () => _open(const CapitalLetterColoringPage())),
       ]),
       _GameSection('جماعية', const Color(0xFF7C3AED), <_GameItem>[
