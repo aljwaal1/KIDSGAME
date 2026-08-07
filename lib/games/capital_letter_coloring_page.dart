@@ -20,35 +20,6 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
     'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
   ];
 
-  static const Map<String, String> _spokenLetterNames = <String, String>{
-    'A': 'ay',
-    'B': 'bee',
-    'C': 'see',
-    'D': 'dee',
-    'E': 'ee',
-    'F': 'eff',
-    'G': 'gee',
-    'H': 'aitch',
-    'I': 'eye',
-    'J': 'jay',
-    'K': 'kay',
-    'L': 'ell',
-    'M': 'em',
-    'N': 'en',
-    'O': 'oh',
-    'P': 'pee',
-    'Q': 'cue',
-    'R': 'are',
-    'S': 'ess',
-    'T': 'tee',
-    'U': 'you',
-    'V': 'vee',
-    'W': 'double you',
-    'X': 'ex',
-    'Y': 'why',
-    'Z': 'zee',
-  };
-
   static const List<Color> colors = <Color>[
     Color(0xFFEC4899),
     Color(0xFF8B5CF6),
@@ -63,6 +34,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
   bool completed = false;
   final FlutterTts _letterVoice = FlutterTts();
   bool _voiceDisposed = false;
+  String _voiceLanguage = 'en-US';
 
   String get letter => letters[letterIndex];
   Color get selectedColor => colors[colorIndex];
@@ -75,14 +47,55 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
 
   Future<void> _prepareLetterVoice() async {
     try {
-      await _letterVoice.setLanguage('en-US');
-      await _letterVoice.setSpeechRate(0.50);
+      final dynamic rawLanguages = await _letterVoice.getLanguages;
+      final languages = rawLanguages is List
+          ? rawLanguages.map((value) => value.toString()).toList()
+          : const <String>[];
+      _voiceLanguage = <String>['en-US', 'en-GB', 'en'].firstWhere(
+        (candidate) => languages.any((available) => available.toLowerCase() == candidate.toLowerCase()),
+        orElse: () => 'en-US',
+      );
+
+      await _letterVoice.setLanguage(_voiceLanguage);
+
+      final dynamic rawVoices = await _letterVoice.getVoices;
+      if (rawVoices is List) {
+        Map<dynamic, dynamic>? selectedVoice;
+        for (final dynamic voice in rawVoices) {
+          if (voice is! Map) continue;
+          final locale = voice['locale']?.toString().toLowerCase() ?? '';
+          if (locale == _voiceLanguage.toLowerCase()) {
+            selectedVoice = voice;
+            break;
+          }
+        }
+        if (selectedVoice == null) {
+          for (final dynamic voice in rawVoices) {
+            if (voice is! Map) continue;
+            final locale = voice['locale']?.toString().toLowerCase() ?? '';
+            if (locale.startsWith('en')) {
+              selectedVoice = voice;
+              break;
+            }
+          }
+        }
+        if (selectedVoice != null) {
+          final name = selectedVoice['name']?.toString();
+          final locale = selectedVoice['locale']?.toString();
+          if (name != null && locale != null) {
+            await _letterVoice.setVoice(<String, String>{'name': name, 'locale': locale});
+            _voiceLanguage = locale;
+          }
+        }
+      }
+
+      await _letterVoice.setSpeechRate(0.46);
       await _letterVoice.setPitch(1.0);
       await _letterVoice.awaitSpeakCompletion(true);
       await Future<void>.delayed(const Duration(milliseconds: 180));
       await _sayLetterValue(letter);
     } catch (error) {
-      debugPrint('تعذر إعداد نطق الحروف: $error');
+      debugPrint('تعذر إعداد نطق الحروف الإنجليزية: $error');
     }
   }
 
@@ -156,16 +169,15 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
     }
     final volume = _voiceVolume;
     if (volume == 0 || _voiceDisposed) return;
-    final spokenName = _spokenLetterNames[value.toUpperCase()] ?? value;
     try {
       await _letterVoice.stop();
-      await _letterVoice.setLanguage('en-US');
-      await _letterVoice.setSpeechRate(0.50);
+      await _letterVoice.setLanguage(_voiceLanguage);
+      await _letterVoice.setSpeechRate(0.46);
       await _letterVoice.setPitch(1.0);
       await _letterVoice.setVolume(volume);
-      await _letterVoice.speak(spokenName);
+      await _letterVoice.speak(value.toUpperCase());
     } catch (error) {
-      debugPrint('تعذر نطق الحرف $value: $error');
+      debugPrint('تعذر نطق الحرف الإنجليزي $value: $error');
     }
   }
 
