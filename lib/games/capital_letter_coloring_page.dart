@@ -20,6 +20,35 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
     'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
   ];
 
+  static const Map<String, String> _spokenLetterNames = <String, String>{
+    'A': 'ay',
+    'B': 'bee',
+    'C': 'see',
+    'D': 'dee',
+    'E': 'ee',
+    'F': 'eff',
+    'G': 'gee',
+    'H': 'aitch',
+    'I': 'eye',
+    'J': 'jay',
+    'K': 'kay',
+    'L': 'ell',
+    'M': 'em',
+    'N': 'en',
+    'O': 'oh',
+    'P': 'pee',
+    'Q': 'cue',
+    'R': 'are',
+    'S': 'ess',
+    'T': 'tee',
+    'U': 'you',
+    'V': 'vee',
+    'W': 'double you',
+    'X': 'ex',
+    'Y': 'why',
+    'Z': 'zee',
+  };
+
   static const List<Color> colors = <Color>[
     Color(0xFFEC4899),
     Color(0xFF8B5CF6),
@@ -47,7 +76,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
   Future<void> _prepareLetterVoice() async {
     try {
       await _letterVoice.setLanguage('en-US');
-      await _letterVoice.setSpeechRate(0.38);
+      await _letterVoice.setSpeechRate(0.50);
       await _letterVoice.setPitch(1.0);
       await _letterVoice.awaitSpeakCompletion(true);
       await Future<void>.delayed(const Duration(milliseconds: 180));
@@ -127,12 +156,14 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
     }
     final volume = _voiceVolume;
     if (volume == 0 || _voiceDisposed) return;
-    final played = await SoundService.instance.play('letter_en_${value.toUpperCase()}.wav', volumeBoost: 2.3);
-    if (played) return;
+    final spokenName = _spokenLetterNames[value.toUpperCase()] ?? value;
     try {
       await _letterVoice.stop();
+      await _letterVoice.setLanguage('en-US');
+      await _letterVoice.setSpeechRate(0.50);
+      await _letterVoice.setPitch(1.0);
       await _letterVoice.setVolume(volume);
-      await _letterVoice.speak(value);
+      await _letterVoice.speak(spokenName);
     } catch (error) {
       debugPrint('تعذر نطق الحرف $value: $error');
     }
