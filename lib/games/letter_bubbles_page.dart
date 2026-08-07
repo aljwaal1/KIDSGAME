@@ -133,10 +133,10 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
     }
   }
 
-  Future<void> _speakTarget() async {
+  Future<void> _speakLetter(String value) async {
     final volume = _voiceVolume;
-    if (_voiceDisposed || volume == 0) return;
-    final name = _arabicSpokenLetterNames[target] ?? _arabicLetterNames[target] ?? target;
+    if (_voiceDisposed || volume == 0 || value.isEmpty) return;
+    final name = _arabicSpokenLetterNames[value] ?? _arabicLetterNames[value] ?? value;
     try {
       await _letterVoice.stop();
       await _letterVoice.setLanguage(_voiceLanguage);
@@ -149,6 +149,8 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
     }
   }
 
+  Future<void> _speakTarget() => _speakLetter(target);
+
   void createRound({bool resetScore = false}) {
     target = _arabicLetters[random.nextInt(_arabicLetters.length)];
     final count = (3 + (score ~/ 5)).clamp(3, 6).toInt();
@@ -159,9 +161,11 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
   void newRound({bool resetScore = false}) { createRound(resetScore: resetScore); setState(() {}); unawaited(_speakTarget()); }
 
   void pop(int index) {
+    final selectedLetter = bubbles[index];
+    unawaited(_speakLetter(selectedLetter));
     var next = false;
     setState(() {
-      if (bubbles[index] == target) {
+      if (selectedLetter == target) {
         SoundService.instance.play('pop.wav'); HapticFeedback.lightImpact(); score++; streak++; bubbles[index] = '';
         if (!bubbles.contains(target)) next = true;
       } else { SoundService.instance.play('wrong.wav'); HapticFeedback.lightImpact(); mistakes++; streak = 0; }
