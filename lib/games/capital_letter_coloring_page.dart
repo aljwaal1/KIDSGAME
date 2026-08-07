@@ -45,54 +45,36 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
     unawaited(_prepareLetterVoice());
   }
 
+  Future<void> _selectEnglishLanguage() async {
+    for (final candidate in const <String>['en-US', 'en-GB', 'en']) {
+      try {
+        final dynamic available = await _letterVoice.isLanguageAvailable(candidate);
+        if (available == true || available == 1 || available?.toString() == '1') {
+          await _letterVoice.setLanguage(candidate);
+          _voiceLanguage = candidate;
+          return;
+        }
+      } catch (_) {
+        // Some Android TTS engines do not support the availability query.
+      }
+    }
+    try {
+      await _letterVoice.setLanguage('en-US');
+      _voiceLanguage = 'en-US';
+    } catch (_) {
+      await _letterVoice.setLanguage('en-GB');
+      _voiceLanguage = 'en-GB';
+    }
+  }
+
   Future<void> _prepareLetterVoice() async {
     try {
-      final dynamic rawLanguages = await _letterVoice.getLanguages;
-      final languages = rawLanguages is List
-          ? rawLanguages.map((value) => value.toString()).toList()
-          : const <String>[];
-      _voiceLanguage = <String>['en-US', 'en-GB', 'en'].firstWhere(
-        (candidate) => languages.any((available) => available.toLowerCase() == candidate.toLowerCase()),
-        orElse: () => 'en-US',
-      );
-
-      await _letterVoice.setLanguage(_voiceLanguage);
-
-      final dynamic rawVoices = await _letterVoice.getVoices;
-      if (rawVoices is List) {
-        Map<dynamic, dynamic>? selectedVoice;
-        for (final dynamic voice in rawVoices) {
-          if (voice is! Map) continue;
-          final locale = voice['locale']?.toString().toLowerCase() ?? '';
-          if (locale == _voiceLanguage.toLowerCase()) {
-            selectedVoice = voice;
-            break;
-          }
-        }
-        if (selectedVoice == null) {
-          for (final dynamic voice in rawVoices) {
-            if (voice is! Map) continue;
-            final locale = voice['locale']?.toString().toLowerCase() ?? '';
-            if (locale.startsWith('en')) {
-              selectedVoice = voice;
-              break;
-            }
-          }
-        }
-        if (selectedVoice != null) {
-          final name = selectedVoice['name']?.toString();
-          final locale = selectedVoice['locale']?.toString();
-          if (name != null && locale != null) {
-            await _letterVoice.setVoice(<String, String>{'name': name, 'locale': locale});
-            _voiceLanguage = locale;
-          }
-        }
-      }
-
+      await _selectEnglishLanguage();
       await _letterVoice.setSpeechRate(0.46);
       await _letterVoice.setPitch(1.0);
+      await _letterVoice.setVolume(1.0);
       await _letterVoice.awaitSpeakCompletion(true);
-      await Future<void>.delayed(const Duration(milliseconds: 180));
+      await Future<void>.delayed(const Duration(milliseconds: 240));
       await _sayLetterValue(letter);
     } catch (error) {
       debugPrint('تعذر إعداد نطق الحروف الإنجليزية: $error');
@@ -135,7 +117,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
       completed = false;
     });
     SoundService.instance.play('chime.wav');
-    unawaited(_sayLetterValue(letter, delay: const Duration(milliseconds: 180)));
+    unawaited(_sayLetterValue(letter, delay: const Duration(milliseconds: 520)));
   }
 
   void _previous() {
@@ -145,13 +127,12 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
       completed = false;
     });
     SoundService.instance.play('click.wav');
-    unawaited(_sayLetterValue(letter, delay: const Duration(milliseconds: 180)));
+    unawaited(_sayLetterValue(letter, delay: const Duration(milliseconds: 240)));
   }
 
   double get _voiceVolume {
     switch (SoundService.instance.levelNotifier.value) {
       case SoundLevel.high:
-        return 1.0;
       case SoundLevel.medium:
         return 1.0;
       case SoundLevel.low:
@@ -165,7 +146,8 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
     if (_voiceVolume == 0 || _voiceDisposed) return;
     if (delay != null) await Future<void>.delayed(delay);
     if (afterCelebration) {
-      await Future<void>.delayed(const Duration(milliseconds: 320));
+      // Give the win sound time to finish so Android audio focus does not cut TTS.
+      await Future<void>.delayed(const Duration(milliseconds: 850));
     }
     final volume = _voiceVolume;
     if (volume == 0 || _voiceDisposed) return;
@@ -178,6 +160,15 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
       await _letterVoice.speak(value.toUpperCase());
     } catch (error) {
       debugPrint('تعذر نطق الحرف الإنجليزي $value: $error');
+      try {
+        await _selectEnglishLanguage();
+        await _letterVoice.setSpeechRate(0.46);
+        await _letterVoice.setPitch(1.0);
+        await _letterVoice.setVolume(volume);
+        await _letterVoice.speak(value.toUpperCase());
+      } catch (retryError) {
+        debugPrint('فشل إعادة محاولة نطق الحرف الإنجليزي $value: $retryError');
+      }
     }
   }
 
