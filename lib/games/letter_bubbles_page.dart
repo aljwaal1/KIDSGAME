@@ -13,65 +13,19 @@ import '../widgets/game_header.dart';
 const List<String> _arabicLetters = <String>['أ','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز','س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ك','ل','م','ن','ه','و','ي'];
 
 const Map<String, String> _arabicLetterNames = <String, String>{
-  'أ': 'ألف',
-  'ب': 'باء',
-  'ت': 'تاء',
-  'ث': 'ثاء',
-  'ج': 'جيم',
-  'ح': 'حاء',
-  'خ': 'خاء',
-  'د': 'دال',
-  'ذ': 'ذال',
-  'ر': 'راء',
-  'ز': 'زاي',
-  'س': 'سين',
-  'ش': 'شين',
-  'ص': 'صاد',
-  'ض': 'ضاد',
-  'ط': 'طاء',
-  'ظ': 'ظاء',
-  'ع': 'عين',
-  'غ': 'غين',
-  'ف': 'فاء',
-  'ق': 'قاف',
-  'ك': 'كاف',
-  'ل': 'لام',
-  'م': 'ميم',
-  'ن': 'نون',
-  'ه': 'هاء',
-  'و': 'واو',
-  'ي': 'ياء',
+  'أ': 'ألف', 'ب': 'باء', 'ت': 'تاء', 'ث': 'ثاء', 'ج': 'جيم', 'ح': 'حاء',
+  'خ': 'خاء', 'د': 'دال', 'ذ': 'ذال', 'ر': 'راء', 'ز': 'زاي', 'س': 'سين',
+  'ش': 'شين', 'ص': 'صاد', 'ض': 'ضاد', 'ط': 'طاء', 'ظ': 'ظاء', 'ع': 'عين',
+  'غ': 'غين', 'ف': 'فاء', 'ق': 'قاف', 'ك': 'كاف', 'ل': 'لام', 'م': 'ميم',
+  'ن': 'نون', 'ه': 'هاء', 'و': 'واو', 'ي': 'ياء',
 };
 
 const Map<String, String> _arabicSpokenLetterNames = <String, String>{
-  'أ': 'أَلِف',
-  'ب': 'بَاء',
-  'ت': 'تَاء',
-  'ث': 'ثَاء',
-  'ج': 'جِيم',
-  'ح': 'حَاء',
-  'خ': 'خَاء',
-  'د': 'دَال',
-  'ذ': 'ذَال',
-  'ر': 'رَاء',
-  'ز': 'زَاي',
-  'س': 'سِين',
-  'ش': 'شِين',
-  'ص': 'صَاد',
-  'ض': 'ضَاد',
-  'ط': 'طَاء',
-  'ظ': 'ظَاء',
-  'ع': 'عَيْن',
-  'غ': 'غَيْن',
-  'ف': 'فَاء',
-  'ق': 'قَاف',
-  'ك': 'كَاف',
-  'ل': 'لَام',
-  'م': 'مِيم',
-  'ن': 'نُون',
-  'ه': 'هَاء',
-  'و': 'وَاو',
-  'ي': 'يَاء',
+  'أ': 'أَلِف', 'ب': 'بَاء', 'ت': 'تَاء', 'ث': 'ثَاء', 'ج': 'جِيم', 'ح': 'حَاء',
+  'خ': 'خَاء', 'د': 'دَال', 'ذ': 'ذَال', 'ر': 'رَاء', 'ز': 'زَاي', 'س': 'سِين',
+  'ش': 'شِين', 'ص': 'صَاد', 'ض': 'ضَاد', 'ط': 'طَاء', 'ظ': 'ظَاء', 'ع': 'عَيْن',
+  'غ': 'غَيْن', 'ف': 'فَاء', 'ق': 'قَاف', 'ك': 'كَاف', 'ل': 'لَام', 'م': 'مِيم',
+  'ن': 'نُون', 'ه': 'هَاء', 'و': 'وَاو', 'ي': 'يَاء',
 };
 
 class BubbleLettersPage extends StatefulWidget {
@@ -95,25 +49,57 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
   String _voiceLanguage = 'ar-SA';
 
   @override
-  void initState() { super.initState(); driftController = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200))..repeat(reverse: true); createRound(resetScore: true); _loadBest(); unawaited(_prepareVoice()); }
-  Future<void> _loadBest() async { final value = await ScoreService.instance.getBestStreak('bubbles'); if (mounted) setState(() => bestStreak = value); }
+  void initState() {
+    super.initState();
+    driftController = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200))..repeat(reverse: true);
+    createRound(resetScore: true);
+    _loadBest();
+    unawaited(_prepareVoice());
+  }
+
+  Future<void> _loadBest() async {
+    final value = await ScoreService.instance.getBestStreak('bubbles');
+    if (mounted) setState(() => bestStreak = value);
+  }
+
   @override
-  void dispose() { _voiceDisposed = true; unawaited(_letterVoice.stop()); driftController.dispose(); super.dispose(); }
+  void dispose() {
+    _voiceDisposed = true;
+    unawaited(_letterVoice.stop());
+    driftController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectArabicLanguage() async {
+    for (final candidate in const <String>['ar-SA', 'ar-EG', 'ar-AE', 'ar']) {
+      try {
+        final dynamic available = await _letterVoice.isLanguageAvailable(candidate);
+        if (available == true || available == 1 || available?.toString() == '1') {
+          await _letterVoice.setLanguage(candidate);
+          _voiceLanguage = candidate;
+          return;
+        }
+      } catch (_) {
+        // Some older Android TTS engines do not implement this query.
+      }
+    }
+    try {
+      await _letterVoice.setLanguage('ar-SA');
+      _voiceLanguage = 'ar-SA';
+    } catch (_) {
+      await _letterVoice.setLanguage('ar');
+      _voiceLanguage = 'ar';
+    }
+  }
 
   Future<void> _prepareVoice() async {
     try {
-      final dynamic availableLanguages = await _letterVoice.getLanguages;
-      final languages = availableLanguages is List
-          ? availableLanguages.map((value) => value.toString()).toList()
-          : const <String>[];
-      _voiceLanguage = <String>['ar-SA', 'ar', 'ar-EG', 'ar-AE'].firstWhere(
-        (candidate) => languages.any((available) => available.toLowerCase() == candidate.toLowerCase()),
-        orElse: () => 'ar-SA',
-      );
-      await _letterVoice.setLanguage(_voiceLanguage);
+      await _selectArabicLanguage();
       await _letterVoice.setSpeechRate(0.48);
       await _letterVoice.setPitch(1.0);
+      await _letterVoice.setVolume(1.0);
       await _letterVoice.awaitSpeakCompletion(true);
+      await Future<void>.delayed(const Duration(milliseconds: 220));
       await _speakTarget();
     } catch (error) {
       debugPrint('تعذر إعداد نطق الحروف العربية: $error');
@@ -123,7 +109,6 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
   double get _voiceVolume {
     switch (SoundService.instance.levelNotifier.value) {
       case SoundLevel.high:
-        return 1.0;
       case SoundLevel.medium:
         return 1.0;
       case SoundLevel.low:
@@ -133,47 +118,83 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
     }
   }
 
-  Future<void> _speakLetter(String value) async {
+  Future<void> _speakLetter(String value, {Duration delay = Duration.zero}) async {
     final volume = _voiceVolume;
     if (_voiceDisposed || volume == 0 || value.isEmpty) return;
+    if (delay > Duration.zero) await Future<void>.delayed(delay);
+    if (_voiceDisposed || _voiceVolume == 0) return;
     final name = _arabicSpokenLetterNames[value] ?? _arabicLetterNames[value] ?? value;
     try {
       await _letterVoice.stop();
       await _letterVoice.setLanguage(_voiceLanguage);
       await _letterVoice.setSpeechRate(0.48);
       await _letterVoice.setPitch(1.0);
-      await _letterVoice.setVolume(volume);
+      await _letterVoice.setVolume(_voiceVolume);
       await _letterVoice.speak(name);
     } catch (error) {
       debugPrint('تعذر نطق الحرف $name: $error');
+      try {
+        await _selectArabicLanguage();
+        await _letterVoice.setVolume(_voiceVolume);
+        await _letterVoice.speak(name);
+      } catch (retryError) {
+        debugPrint('فشل إعادة محاولة نطق $name: $retryError');
+      }
     }
   }
 
-  Future<void> _speakTarget() => _speakLetter(target);
+  Future<void> _speakTarget({Duration delay = Duration.zero}) => _speakLetter(target, delay: delay);
 
   void createRound({bool resetScore = false}) {
     target = _arabicLetters[random.nextInt(_arabicLetters.length)];
     final count = (3 + (score ~/ 5)).clamp(3, 6).toInt();
     bubbles = List<String>.generate(count, (_) => _arabicLetters[random.nextInt(_arabicLetters.length)]);
     bubbles[random.nextInt(count)] = target;
-    if (resetScore) { score = 0; mistakes = 0; streak = 0; }
+    if (resetScore) {
+      score = 0;
+      mistakes = 0;
+      streak = 0;
+    }
   }
-  void newRound({bool resetScore = false}) { createRound(resetScore: resetScore); setState(() {}); unawaited(_speakTarget()); }
+
+  void newRound({bool resetScore = false}) {
+    createRound(resetScore: resetScore);
+    setState(() {});
+    unawaited(_speakTarget(delay: const Duration(milliseconds: 180)));
+  }
 
   void pop(int index) {
     final selectedLetter = bubbles[index];
-    unawaited(_speakLetter(selectedLetter));
     var next = false;
     setState(() {
       if (selectedLetter == target) {
-        SoundService.instance.play('pop.wav'); HapticFeedback.lightImpact(); score++; streak++; bubbles[index] = '';
+        SoundService.instance.play('pop.wav');
+        HapticFeedback.lightImpact();
+        score++;
+        streak++;
+        bubbles[index] = '';
         if (!bubbles.contains(target)) next = true;
-      } else { SoundService.instance.play('wrong.wav'); HapticFeedback.lightImpact(); mistakes++; streak = 0; }
+      } else {
+        SoundService.instance.play('wrong.wav');
+        HapticFeedback.lightImpact();
+        mistakes++;
+        streak = 0;
+      }
     });
+
+    // Let the tap sound finish first so it does not steal Android audio focus from TTS.
+    unawaited(_speakLetter(selectedLetter, delay: const Duration(milliseconds: 260)));
+
     if (next) {
-      SoundService.instance.play('chime.wav'); confettiKey.currentState?.burst(count: 16); ScoreService.instance.addStars(1);
-      ScoreService.instance.reportStreak('bubbles', streak).then((ok) { if (ok && mounted) setState(() => bestStreak = streak); });
-      Future<void>.delayed(const Duration(milliseconds: 280), () { if (mounted) newRound(); });
+      SoundService.instance.play('chime.wav');
+      confettiKey.currentState?.burst(count: 16);
+      ScoreService.instance.addStars(1);
+      ScoreService.instance.reportStreak('bubbles', streak).then((ok) {
+        if (ok && mounted) setState(() => bestStreak = streak);
+      });
+      Future<void>.delayed(const Duration(milliseconds: 980), () {
+        if (mounted) newRound();
+      });
     }
   }
 
