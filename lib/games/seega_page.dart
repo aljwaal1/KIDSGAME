@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 class SeegaPage extends StatefulWidget {
@@ -56,7 +57,7 @@ class _SeegaPageState extends State<SeegaPage> {
       selected = null;
       message = 'ضع الحصى على اللوحة';
     });
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
   }
 
   int rowOf(int index) => index ~/ 5;
@@ -76,7 +77,7 @@ class _SeegaPageState extends State<SeegaPage> {
         if (player == 1) redPlaced++; else bluePlaced++;
         placedThisTurn++;
       });
-      await SoundService.instance.play('move.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.stonePlace);
       if (!placingPhase) {
         setState(() {
           placedThisTurn = 0;
@@ -96,19 +97,19 @@ class _SeegaPageState extends State<SeegaPage> {
         selected = index;
         message = 'اختر خانة قريبة فارغة';
       });
-      SoundService.instance.play('tap.wav');
+      SoundService.instance.playEvent(GameSoundEvent.pieceSelect);
       return;
     }
 
     if (board[index] == player) {
       setState(() => selected = index);
-      SoundService.instance.play('tap.wav');
+      SoundService.instance.playEvent(GameSoundEvent.pieceSelect);
       return;
     }
 
     final from = selected!;
     if (board[index] != 0 || !adjacent(from, index)) {
-      await SoundService.instance.play('wrong.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.blockedMove);
       setState(() => message = 'الحركة يجب أن تكون لخانة قريبة');
       return;
     }
@@ -118,7 +119,7 @@ class _SeegaPageState extends State<SeegaPage> {
       board[from] = 0;
       selected = null;
     });
-    await SoundService.instance.play('move.wav');
+    await SoundService.instance.playEvent(GameSoundEvent.pieceMove);
     final captured = await checkSimpleTrap(index);
     if (captured) {
       setState(() => message = 'أكلت حصاة — العب مرة أخرى');
@@ -150,7 +151,7 @@ class _SeegaPageState extends State<SeegaPage> {
           board[c] = 0;
         }
       });
-      await SoundService.instance.play('pop.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.pieceCapture);
     }
 
     final red = board.where((v) => v == 1).length;
@@ -158,7 +159,7 @@ class _SeegaPageState extends State<SeegaPage> {
     if (!placingPhase && (red <= 1 || blue <= 1)) {
       if (red > blue) redWins++; else blueWins++;
       await ScoreService.instance.addStars(3);
-      await SoundService.instance.play('win.wav');
+      await SoundService.instance.playEvent(red > blue ? GameSoundEvent.humanVictory : GameSoundEvent.friendVictory);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(red > blue ? 'فاز الأحمر في السيجا' : 'فاز الأزرق في السيجا')));
       }

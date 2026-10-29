@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
@@ -38,7 +39,7 @@ class _ConnectFourPageState extends State<ConnectFourPage> {
 
   void _setBotMode(bool value) {
     if (botMode == value) return;
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     botMode = value;
     _reset();
   }
@@ -48,19 +49,20 @@ class _ConnectFourPageState extends State<ConnectFourPage> {
     var row = -1;
     for (var r = rows - 1; r >= 0; r--) if (board[r * columns + column] < 0) { row = r; break; }
     if (row < 0) { HapticFeedback.selectionClick(); return; }
-    SoundService.instance.play('move.wav');
+    SoundService.instance.playEvent(GameSoundEvent.pieceDrop);
     HapticFeedback.lightImpact();
     setState(() {
       selectedColumn = column;
       board[row * columns + column] = player;
       if (_won(row, column, player)) {
         winner = player;
-        SoundService.instance.play('win.wav');
+        SoundService.instance.playEvent(player == 0 ? GameSoundEvent.humanVictory : (botMode ? GameSoundEvent.opponentVictory : GameSoundEvent.friendVictory));
         HapticFeedback.heavyImpact();
         confettiKey.currentState?.burst();
         ScoreService.instance.addStars(3);
       } else if (!board.contains(-1)) {
         draw = true;
+        SoundService.instance.playEvent(GameSoundEvent.drawResult);
       } else {
         player = 1 - player;
       }

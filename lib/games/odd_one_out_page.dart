@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 class OddOneOutPage extends StatefulWidget {
@@ -56,7 +57,7 @@ class _OddOneOutPageState extends State<OddOneOutPage> {
 
   Future<void> _answer(int index) async {
     if (index == correctIndex) {
-      await SoundService.instance.play('win.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.correctAnswer);
       await ScoreService.instance.addStars(2);
       if (!mounted) return;
       setState(() {
@@ -66,7 +67,7 @@ class _OddOneOutPageState extends State<OddOneOutPage> {
       _show('رائع! وجدت المختلف ⭐');
       Future<void>.delayed(const Duration(milliseconds: 450), _newRound);
     } else {
-      await SoundService.instance.play('wrong.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.wrongAnswer);
       if (!mounted) return;
       _show('حاول مرة أخرى، ركّز في المجموعة');
     }

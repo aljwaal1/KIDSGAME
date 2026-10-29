@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 class SequenceOrderPage extends StatefulWidget {
@@ -41,7 +42,7 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
       completed = false;
       checking = false;
     });
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
   }
 
   void _swap(int from, int to) {
@@ -51,7 +52,7 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
       items[from] = items[to];
       items[to] = temp;
     });
-    SoundService.instance.play('move.wav');
+    SoundService.instance.playEvent(GameSoundEvent.tileSlide);
   }
 
   Future<void> _check() async {
@@ -61,12 +62,12 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
     if (solved) {
       completed = true;
       await ScoreService.instance.addStars(3);
-      await SoundService.instance.play('win.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.humanVictory);
       if (!mounted) return;
       setState(() => score++);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('رائع! رتبت القصة بشكل صحيح')));
     } else {
-      await SoundService.instance.play('wrong.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.wrongAnswer);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حاول ترتيب الأحداث من البداية للنهاية')));
     }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 enum _SevenPhase { throwBall, rebuild, won, lost }
@@ -60,7 +61,7 @@ class _SevenStonesPageState extends State<SevenStonesPage>
       _rebuilt = 0;
       _seconds = 12;
     });
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
   }
 
   void _panStart(DragStartDetails details) {
@@ -95,7 +96,7 @@ class _SevenStonesPageState extends State<SevenStonesPage>
     final start = const Offset(.5, .89);
     final normalized = direction / direction.distance;
     final end = start + normalized * .73;
-    SoundService.instance.play('move.wav');
+    SoundService.instance.playEvent(GameSoundEvent.throwWhoosh);
     for (var frame = 1; frame <= 24; frame++) {
       await Future<void>.delayed(const Duration(milliseconds: 18));
       if (!mounted) return;
@@ -105,13 +106,13 @@ class _SevenStonesPageState extends State<SevenStonesPage>
     final hit = (_ball - const Offset(.5, .25)).distance < .17;
     if (!hit) {
       _misses++;
-      SoundService.instance.play('wrong.wav');
+      SoundService.instance.playEvent(GameSoundEvent.softMiss);
       await Future<void>.delayed(const Duration(milliseconds: 600));
       if (mounted) _reset();
       return;
     }
     HapticFeedback.heavyImpact();
-    SoundService.instance.play('pop.wav');
+    SoundService.instance.playEvent(GameSoundEvent.stoneCrash);
     _startRebuild();
   }
 
@@ -147,7 +148,7 @@ class _SevenStonesPageState extends State<SevenStonesPage>
           _phase = _SevenPhase.lost;
           _misses++;
         });
-        SoundService.instance.play('wrong.wav');
+        SoundService.instance.playEvent(GameSoundEvent.blockedMove);
       }
     });
   }
@@ -159,7 +160,7 @@ class _SevenStonesPageState extends State<SevenStonesPage>
       _rebuilt++;
     });
     HapticFeedback.selectionClick();
-    SoundService.instance.play('tap.wav');
+    SoundService.instance.playEvent(GameSoundEvent.stonePlace);
     if (_rebuilt == 7) _completeTower();
   }
 
@@ -171,7 +172,7 @@ class _SevenStonesPageState extends State<SevenStonesPage>
       _wins++;
     });
     await ScoreService.instance.addStars(3);
-    await SoundService.instance.play('win.wav');
+    await SoundService.instance.playEvent(GameSoundEvent.humanVictory);
   }
 
   String get _title {

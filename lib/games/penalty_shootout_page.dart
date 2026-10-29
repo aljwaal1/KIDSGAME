@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
@@ -104,6 +105,7 @@ class _PenaltyShootoutPageState extends State<PenaltyShootoutPage>
 
   Future<void> _resolveKick(int shot, int keeper, bool playerOneShot) async {
     final goal = shot != keeper;
+    SoundService.instance.playEvent(GameSoundEvent.penaltyKick);
     setState(() {
       _shotZone = shot;
       _keeperZone = keeper;
@@ -121,7 +123,7 @@ class _PenaltyShootoutPageState extends State<PenaltyShootoutPage>
     await _kickAnimation.forward(from: 0);
     if (!mounted) return;
     setState(() => _resultText = goal ? 'هــدف!' : 'تصدٍ رائع!');
-    SoundService.instance.play(goal ? 'chime.wav' : 'wrong.wav');
+    SoundService.instance.playEvent(goal ? GameSoundEvent.penaltyNet : GameSoundEvent.penaltySave);
     await Future<void>.delayed(const Duration(milliseconds: 850));
     if (!mounted) return;
 
@@ -143,7 +145,11 @@ class _PenaltyShootoutPageState extends State<PenaltyShootoutPage>
 
     if (roundComplete) {
       _confettiKey.currentState?.burst();
-      SoundService.instance.play('win.wav');
+      SoundService.instance.playEvent(
+        _playerOneGoals > _playerTwoGoals
+            ? GameSoundEvent.humanVictory
+            : (_againstBot ? GameSoundEvent.opponentVictory : GameSoundEvent.friendVictory),
+      );
     }
   }
 

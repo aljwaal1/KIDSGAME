@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 class PatternChallengePage extends StatefulWidget {
@@ -42,12 +43,12 @@ class _PatternChallengePageState extends State<PatternChallengePage> {
   Future<void> _pick(_PatternShape item) async {
     if (item.name == answer.name) {
       await ScoreService.instance.addStars(2);
-      await SoundService.instance.play('chime.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.correctAnswer);
       if (!mounted) return;
       setState(() => score++);
       _round();
     } else {
-      await SoundService.instance.play('wrong.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.wrongAnswer);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('انظر للنمط مرة أخرى')));
     }

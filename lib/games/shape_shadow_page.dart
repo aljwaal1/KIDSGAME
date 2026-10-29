@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 class ShapeShadowPage extends StatefulWidget {
@@ -40,14 +41,14 @@ class _ShapeShadowPageState extends State<ShapeShadowPage> {
 
   Future<void> _pick(_ShapeItem item) async {
     if (item.name == target.name) {
-      await SoundService.instance.play('chime.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.correctAnswer);
       await ScoreService.instance.addStars(2);
       if (!mounted) return;
       setState(() => score++);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أحسنت! هذا هو الظل الصحيح')));
       Future<void>.delayed(const Duration(milliseconds: 450), _round);
     } else {
-      await SoundService.instance.play('wrong.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.wrongAnswer);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ليس هذا، جرّب ظلًا آخر')));
     }

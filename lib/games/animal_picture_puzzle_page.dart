@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
@@ -64,7 +65,7 @@ class _AnimalPicturePuzzlePageState extends State<AnimalPicturePuzzlePage> {
 
   void _choosePicture(int index) {
     if (index == pictureIndex) return;
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     setState(() => pictureIndex = index);
     _shuffle();
     _loadBest();
@@ -72,7 +73,7 @@ class _AnimalPicturePuzzlePageState extends State<AnimalPicturePuzzlePage> {
 
   void _setGridSize(int value) {
     if (gridSize == value) return;
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     setState(() {
       gridSize = value;
       tiles = _orderedTiles();
@@ -97,7 +98,7 @@ class _AnimalPicturePuzzlePageState extends State<AnimalPicturePuzzlePage> {
     if (sourceValue == targetValue) return;
     final sourceIndex = tiles.indexOf(sourceValue);
     final targetIndex = tiles.indexOf(targetValue);
-    SoundService.instance.play('move.wav');
+    SoundService.instance.playEvent(GameSoundEvent.tileSlide);
     HapticFeedback.selectionClick();
     setState(() {
       tiles[sourceIndex] = targetValue;
@@ -110,7 +111,7 @@ class _AnimalPicturePuzzlePageState extends State<AnimalPicturePuzzlePage> {
 
   void _selectOrSwap(int value) {
     if (selectedTile == null) {
-      SoundService.instance.play('click.wav');
+      SoundService.instance.playEvent(GameSoundEvent.pieceSelect);
       setState(() => selectedTile = value);
       return;
     }
@@ -132,7 +133,7 @@ class _AnimalPicturePuzzlePageState extends State<AnimalPicturePuzzlePage> {
   Future<void> _celebrate() async {
     solvedCelebrated = true;
     HapticFeedback.heavyImpact();
-    SoundService.instance.play('win.wav');
+    SoundService.instance.playEvent(GameSoundEvent.humanVictory);
     confettiKey.currentState?.burst();
     await ScoreService.instance.addStars(gridSize == 3 ? 2 : 3);
     final isNewBest = await ScoreService.instance.reportMoves(scoreKey, moves);

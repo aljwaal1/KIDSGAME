@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
@@ -40,7 +41,7 @@ class _SlidingPuzzlePageState extends State<SlidingPuzzlePage> {
 
   void setDifficulty(PuzzleDifficulty value) {
     if (difficulty == value) return;
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     setState(() { difficulty = value; gridSize = value == PuzzleDifficulty.easy ? 3 : 4; tiles = _orderedTiles(); });
     shuffle();
     _loadBest();
@@ -74,12 +75,12 @@ class _SlidingPuzzlePageState extends State<SlidingPuzzlePage> {
   void move(int index) {
     final empty = tiles.indexOf(0);
     if (!movableNeighbors(empty).contains(index)) return;
-    SoundService.instance.play('move.wav');
+    SoundService.instance.playEvent(GameSoundEvent.tileSlide);
     setState(() { tiles[empty] = tiles[index]; tiles[index] = 0; moves++; });
     if (solved && !solvedCelebrated) {
       solvedCelebrated = true;
       HapticFeedback.heavyImpact();
-      SoundService.instance.play('win.wav');
+      SoundService.instance.playEvent(GameSoundEvent.humanVictory);
       confettiKey.currentState?.burst();
       final stars = moves <= gridSize * gridSize * 3 ? 3 : 1;
       ScoreService.instance.addStars(stars);

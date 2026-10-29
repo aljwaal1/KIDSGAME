@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 class RingGuessPage extends StatefulWidget {
@@ -41,14 +42,14 @@ class _RingGuessPageState extends State<RingGuessPage> with SingleTickerProvider
     });
     if (index == ringIndex) {
       await ScoreService.instance.addStars(2);
-      await SoundService.instance.play('win.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.treasureFound);
       if (!mounted) return;
       setState(() {
         score++;
         message = 'أحسنت! وجدت الخاتم';
       });
     } else {
-      await SoundService.instance.play('wrong.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.softMiss);
       if (!mounted) return;
       setState(() => message = 'ليس هنا، كان الخاتم في يد أخرى');
     }

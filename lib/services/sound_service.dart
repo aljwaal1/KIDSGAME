@@ -2,40 +2,53 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'game_audio_catalog.dart';
+import 'game_audio_event.dart';
+
 enum SoundLevel { high, medium, low, muted }
 
 class SoundService {
   SoundService._();
   static final SoundService instance = SoundService._();
 
-  final AudioPlayer _uiPlayer = AudioPlayer(playerId: 'ui-effects');
-  final AudioPlayer _gamePlayer = AudioPlayer(playerId: 'game-effects');
-  final AudioPlayer _celebrationPlayer = AudioPlayer(playerId: 'celebration-effects');
+  final Map<AudioChannel, AudioPlayer> _players = <AudioChannel, AudioPlayer>{
+    AudioChannel.ui: AudioPlayer(playerId: 'ui-effects'),
+    AudioChannel.action: AudioPlayer(playerId: 'action-effects'),
+    AudioChannel.impact: AudioPlayer(playerId: 'impact-effects'),
+    AudioChannel.result: AudioPlayer(playerId: 'result-effects'),
+    AudioChannel.voice: AudioPlayer(playerId: 'voice-assets'),
+  };
+  final Map<GameSoundEvent, DateTime> _lastPlayed = <GameSoundEvent, DateTime>{};
 
   final ValueNotifier<SoundLevel> levelNotifier = ValueNotifier<SoundLevel>(SoundLevel.medium);
   final ValueNotifier<bool> mutedNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<String?> lastErrorNotifier = ValueNotifier<String?>(null);
-
   SoundLevel _lastAudibleLevel = SoundLevel.medium;
 
-  static const Set<String> _uiSounds = <String>{'click.wav', 'tap.wav'};
-  static const Set<String> _celebrationSounds = <String>{'win.wav', 'chime.wav'};
+  bool get isMuted => levelNotifier.value == SoundLevel.muted;
+  double get levelFactor => switch (levelNotifier.value) {
+        SoundLevel.high => 1.0,
+        SoundLevel.medium => .65,
+        SoundLevel.low => .35,
+        SoundLevel.muted => 0.0,
+      };
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     final savedLevel = _parseLevel(prefs.getString('sound_level'));
     final legacyMuted = prefs.getBool('sound_muted') ?? false;
     final initialLevel = savedLevel ?? (legacyMuted ? SoundLevel.muted : SoundLevel.medium);
-
     levelNotifier.value = initialLevel;
     mutedNotifier.value = initialLevel == SoundLevel.muted;
     if (initialLevel != SoundLevel.muted) _lastAudibleLevel = initialLevel;
-
-    await Future.wait(<Future<void>>[
-      _configurePlayer(_uiPlayer, PlayerMode.lowLatency),
-      _configurePlayer(_gamePlayer, PlayerMode.lowLatency),
-      _configurePlayer(_celebrationPlayer, PlayerMode.mediaPlayer),
-    ]);
+    await Future.wait(_players.entries.map((entry) async {
+      await entry.value.setReleaseMode(ReleaseMode.stop);
+      await entry.value.setPlayerMode(
+        entry.key == AudioChannel.result || entry.key == AudioChannel.voice
+            ? PlayerMode.mediaPlayer
+            : PlayerMode.lowLatency,
+      );
+    }));
   }
 
   SoundLevel? _parseLevel(String? value) {
@@ -45,55 +58,36 @@ class SoundService {
     return null;
   }
 
-  Future<void> _configurePlayer(AudioPlayer player, PlayerMode mode) async {
-    await player.setReleaseMode(ReleaseMode.stop);
-    await player.setPlayerMode(mode);
+  Future<bool> playEvent(GameSoundEvent event, {double volumeBoost = 1.0}) async {
+    if (isMuted) return false;
+    final cue = GameAudioCatalog.cueFor(event);
+    final now = DateTime.now();
+    final previous = _lastPlayed[event];
+    if (previous != null && now.difference(previous) < cue.cooldown) return false;
+    _lastPlayed[event] = now;
+    return _playAsset(cue.asset, cue.channel, cue.gain * volumeBoost);
   }
 
-  AudioPlayer _playerFor(String fileName) {
-    if (_uiSounds.contains(fileName)) return _uiPlayer;
-    if (_celebrationSounds.contains(fileName)) return _celebrationPlayer;
-    return _gamePlayer;
+  Future<bool> playVoiceAsset(String fileName, {double gain = 1.0}) {
+    if (isMuted) return Future<bool>.value(false);
+    return _playAsset(fileName, AudioChannel.voice, gain);
   }
 
-  double _baseVolumeFor(String fileName) {
-    if (_uiSounds.contains(fileName)) return 0.58;
-    if (_celebrationSounds.contains(fileName)) return 0.75;
-    return 0.68;
-  }
-
-  double get _levelFactor {
-    switch (levelNotifier.value) {
-      case SoundLevel.high:
-        return 1.0;
-      case SoundLevel.medium:
-        return 0.65;
-      case SoundLevel.low:
-        return 0.35;
-      case SoundLevel.muted:
-        return 0.0;
-    }
-  }
-
-  double _volumeFor(String fileName) {
-    return (_baseVolumeFor(fileName) * _levelFactor).clamp(0.0, 1.0).toDouble();
-  }
-
-  Future<bool> play(String fileName, {double volumeBoost = 1.0}) async {
-    if (levelNotifier.value == SoundLevel.muted) return false;
-
-    final player = _playerFor(fileName);
+  Future<bool> _playAsset(String asset, AudioChannel channel, double gain) async {
+    final player = _players[channel]!;
     try {
       lastErrorNotifier.value = null;
       await player.stop();
       await player.play(
-        AssetSource('sounds/$fileName'),
-        volume: (_volumeFor(fileName) * volumeBoost).clamp(0.0, 1.0).toDouble(),
-        mode: _celebrationSounds.contains(fileName) ? PlayerMode.mediaPlayer : PlayerMode.lowLatency,
+        AssetSource('sounds/$asset'),
+        volume: (gain * levelFactor).clamp(0.0, 1.0).toDouble(),
+        mode: channel == AudioChannel.result || channel == AudioChannel.voice
+            ? PlayerMode.mediaPlayer
+            : PlayerMode.lowLatency,
       );
       return true;
     } catch (error, stackTrace) {
-      final message = 'تعذر تشغيل $fileName: $error';
+      final message = 'تعذر تشغيل $asset: $error';
       lastErrorNotifier.value = message;
       debugPrint(message);
       debugPrintStack(stackTrace: stackTrace);
@@ -101,22 +95,28 @@ class SoundService {
     }
   }
 
-  Future<void> stopAll() async {
-    await Future.wait(<Future<void>>[
-      _uiPlayer.stop(),
-      _gamePlayer.stop(),
-      _celebrationPlayer.stop(),
-    ]);
+  Future<bool> play(String fileName, {double volumeBoost = 1.0}) {
+    final channel = <String>{'click.wav', 'tap.wav'}.contains(fileName)
+        ? AudioChannel.ui
+        : <String>{'win.wav', 'chime.wav'}.contains(fileName)
+            ? AudioChannel.result
+            : AudioChannel.action;
+    return _playAsset(fileName, channel, .68 * volumeBoost);
   }
+
+  Future<void> stopVoiceAwareAudio() => Future.wait(<Future<void>>[
+        _players[AudioChannel.voice]!.stop(),
+        _players[AudioChannel.ui]!.stop(),
+      ]);
+
+  Future<void> stopAll() => Future.wait(_players.values.map((player) => player.stop()));
 
   Future<void> setLevel(SoundLevel level) async {
     if (levelNotifier.value == level) return;
-
     if (level != SoundLevel.muted) _lastAudibleLevel = level;
     levelNotifier.value = level;
     mutedNotifier.value = level == SoundLevel.muted;
     if (level == SoundLevel.muted) await stopAll();
-
     final prefs = await SharedPreferences.getInstance();
     await Future.wait(<Future<bool>>[
       prefs.setString('sound_level', level.name),
@@ -125,7 +125,7 @@ class SoundService {
   }
 
   Future<void> toggleMute() async {
-    if (levelNotifier.value == SoundLevel.muted) {
+    if (isMuted) {
       await setLevel(_lastAudibleLevel);
     } else {
       _lastAudibleLevel = levelNotifier.value;
@@ -133,11 +133,5 @@ class SoundService {
     }
   }
 
-  Future<void> dispose() async {
-    await Future.wait(<Future<void>>[
-      _uiPlayer.dispose(),
-      _gamePlayer.dispose(),
-      _celebrationPlayer.dispose(),
-    ]);
-  }
+  Future<void> dispose() => Future.wait(_players.values.map((player) => player.dispose()));
 }

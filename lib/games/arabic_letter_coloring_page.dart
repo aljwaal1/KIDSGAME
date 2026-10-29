@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
+import '../services/letter_voice_service.dart';
 import '../services/sound_service.dart';
 
 class ArabicLetterColoringPage extends StatefulWidget {
@@ -94,6 +96,7 @@ class _ArabicLetterColoringPageState extends State<ArabicLetterColoringPage> {
     if (_voiceDisposed || _voiceVolume == 0) return;
     if (delay != null) await Future<void>.delayed(delay);
     if (_voiceDisposed || _voiceVolume == 0) return;
+    if (await LetterVoiceService.playArabic(_letter)) return;
     try {
       await _tts.stop();
       await _tts.setLanguage(_voiceLanguage);
@@ -123,6 +126,7 @@ class _ArabicLetterColoringPageState extends State<ArabicLetterColoringPage> {
       _strokes.last.points.add(point);
       _paintAmount += delta / math.max(1.0, size.shortestSide * 6.2);
     });
+    SoundService.instance.playEvent(GameSoundEvent.traceStroke);
     if (_paintAmount >= 0.92 && !_completed) {
       _completeLetter();
     }
@@ -139,7 +143,7 @@ class _ArabicLetterColoringPageState extends State<ArabicLetterColoringPage> {
       _paintAmount = 1.0;
     });
     ScoreService.instance.addStars(2);
-    SoundService.instance.play('win.wav');
+    SoundService.instance.playEvent(GameSoundEvent.roundComplete);
     unawaited(_speakLetter(delay: const Duration(milliseconds: 420)));
   }
 
@@ -150,7 +154,7 @@ class _ArabicLetterColoringPageState extends State<ArabicLetterColoringPage> {
       _completed = false;
       _lastPoint = null;
     });
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
   }
 
   void _next() {
@@ -161,7 +165,7 @@ class _ArabicLetterColoringPageState extends State<ArabicLetterColoringPage> {
       _completed = false;
       _lastPoint = null;
     });
-    SoundService.instance.play('chime.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     unawaited(_speakLetter(delay: const Duration(milliseconds: 180)));
   }
 
@@ -173,7 +177,7 @@ class _ArabicLetterColoringPageState extends State<ArabicLetterColoringPage> {
       _completed = false;
       _lastPoint = null;
     });
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     unawaited(_speakLetter(delay: const Duration(milliseconds: 140)));
   }
 

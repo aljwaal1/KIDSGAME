@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
+import '../services/letter_voice_service.dart';
 import '../services/sound_service.dart';
 
 class CapitalLetterColoringPage extends StatefulWidget {
@@ -84,6 +86,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
   void _handleTrace(Offset point, Size size) {
     final hit = LetterTraceMath.hitProgress(letter, size, point);
     if (!hit.accepted) return;
+    SoundService.instance.playEvent(GameSoundEvent.traceStroke);
 
     setState(() {
       progress = math.max(progress, hit.progress).clamp(0.0, 1.0).toDouble();
@@ -92,7 +95,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
     if (progress >= 0.92 && !completed) {
       completed = true;
       ScoreService.instance.addStars(2);
-      SoundService.instance.play('win.wav');
+      SoundService.instance.playEvent(GameSoundEvent.roundComplete);
       unawaited(_sayLetterValue(letter, afterCelebration: true));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,7 +110,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
       progress = 0;
       completed = false;
     });
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
   }
 
   void _next() {
@@ -116,7 +119,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
       progress = 0;
       completed = false;
     });
-    SoundService.instance.play('chime.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     unawaited(_sayLetterValue(letter, delay: const Duration(milliseconds: 520)));
   }
 
@@ -126,7 +129,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
       progress = 0;
       completed = false;
     });
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     unawaited(_sayLetterValue(letter, delay: const Duration(milliseconds: 240)));
   }
 
@@ -151,6 +154,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
     }
     final volume = _voiceVolume;
     if (volume == 0 || _voiceDisposed) return;
+    if (await LetterVoiceService.playEnglish(value)) return;
     try {
       await _letterVoice.stop();
       await _letterVoice.setLanguage(_voiceLanguage);
@@ -213,7 +217,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
                       return GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onPanStart: (details) {
-                          SoundService.instance.play('move.wav');
+                          SoundService.instance.playEvent(GameSoundEvent.traceStroke);
                           _handleTrace(details.localPosition, canvasSize);
                         },
                         onPanUpdate: (details) => _handleTrace(details.localPosition, canvasSize),
@@ -236,7 +240,7 @@ class _CapitalLetterColoringPageState extends State<CapitalLetterColoringPage> {
                 selectedIndex: colorIndex,
                 onSelect: (index) {
                   setState(() => colorIndex = index);
-                  SoundService.instance.play('click.wav');
+                  SoundService.instance.playEvent(GameSoundEvent.uiSelect);
                 },
               ),
               const SizedBox(height: 8),
