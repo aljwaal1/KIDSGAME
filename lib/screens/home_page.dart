@@ -25,6 +25,7 @@ import '../games/shape_shadow_page.dart';
 import '../games/smart_maze_page.dart';
 import '../games/snakes_and_ladders_page.dart';
 import '../services/score_service.dart';
+import '../theme/game_design_system.dart';
 import '../widgets/mascot_painter.dart';
 import '../widgets/sound_level_button.dart';
 
@@ -84,9 +85,11 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
     ];
 
     final current = sections[section];
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
-      child: Column(
+    return GameBackdrop(
+      palette: GamePalettes.learning,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+        child: Column(
         children: <Widget>[
           const _HeroPanel(),
           const SizedBox(height: 10),
@@ -108,6 +111,7 @@ class _HomeGamesPageState extends State<HomeGamesPage> {
           const SizedBox(height: 8),
           Expanded(child: _GamesGrid(items: current.items)),
         ],
+        ),
       ),
     );
   }
@@ -149,18 +153,22 @@ class _SectionTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
+    return SizedBox(
+      height: 48,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        children: <Widget>[
         for (var i = 0; i < sections.length; i++)
-          Expanded(
-            child: Padding(
-              padding: EdgeInsetsDirectional.only(start: i == 0 ? 0 : 5),
+          Padding(
+              padding: EdgeInsetsDirectional.only(start: i == 0 ? 0 : 7),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () => onSelect(i),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  height: 44,
+                  constraints: const BoxConstraints(minWidth: 82),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: selected == i ? sections[i].color : Colors.white,
@@ -175,10 +183,10 @@ class _SectionTabs extends StatelessWidget {
                     style: TextStyle(color: selected == i ? Colors.white : const Color(0xFF475569), fontWeight: FontWeight.w900, fontSize: 12),
                   ),
                 ),
-              ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }

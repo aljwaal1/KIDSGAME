@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
 
@@ -99,9 +100,11 @@ class _SlidingPuzzlePageState extends State<SlidingPuzzlePage> {
     final bestText = bestMoves != null ? '  •  أفضل: $bestMoves' : '';
     return ConfettiOverlay(
       key: confettiKey,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-        child: Column(
+      child: GameBackdrop(
+        palette: GamePalettes.puzzle,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+          child: Column(
           children: <Widget>[
             GameHeader(title: 'بزل الأرقام', subtitle: solved ? 'ممتاز، رتبت الأرقام 🎉' : 'الحركات: $moves$bestText', color: const Color(0xFFF97316), onReset: shuffle),
             const SizedBox(height: 8),
@@ -126,6 +129,7 @@ class _SlidingPuzzlePageState extends State<SlidingPuzzlePage> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
 import '../widgets/win_line_painter.dart';
@@ -213,9 +214,11 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
   Widget build(BuildContext context) {
     return ConfettiOverlay(
       key: confettiKey,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-        child: Column(
+      child: GameBackdrop(
+        palette: GamePalettes.strategy,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+          child: Column(
           children: <Widget>[
             GameHeader(title: 'إكس أو', subtitle: message, color: const Color(0xFF6D28D9), onReset: reset),
             const SizedBox(height: 8),
@@ -274,6 +277,7 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
               ),
             ),
           ],
+          ),
         ),
       ),
     );

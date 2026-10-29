@@ -5,6 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import '../services/game_audio_event.dart';
 import '../services/letter_voice_service.dart';
+import '../theme/game_design_system.dart';
 import '../services/sound_service.dart';
 
 class ArabicLetterCardsPage extends StatefulWidget {
@@ -118,8 +119,10 @@ class _ArabicLetterCardsPageState extends State<ArabicLetterCardsPage> {
     final gradient = _gradients[_index % _gradients.length];
     return Scaffold(
       appBar: AppBar(title: const Text('بطاقات الحروف العربية')),
-      body: SafeArea(
-        child: Padding(
+      body: GameBackdrop(
+        palette: GamePalettes.learning,
+        child: SafeArea(
+          child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
           child: Column(
             children: <Widget>[
@@ -216,6 +219,7 @@ class _ArabicLetterCardsPageState extends State<ArabicLetterCardsPage> {
               const SizedBox(height: 5),
               const Text('يمكنك أيضًا السحب يمينًا أو يسارًا للتنقل', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
             ],
+          ),
           ),
         ),
       ),

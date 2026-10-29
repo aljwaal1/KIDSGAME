@@ -2,8 +2,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 import '../widgets/confetti_overlay.dart';
-import '../widgets/game_header.dart';
 
 class AirHockeyPage extends StatefulWidget { const AirHockeyPage({super.key}); @override State<AirHockeyPage> createState()=>_AirHockeyPageState(); }
 class _AirHockeyPageState extends State<AirHockeyPage> with SingleTickerProviderStateMixin {
@@ -63,12 +63,12 @@ class _AirHockeyPageState extends State<AirHockeyPage> with SingleTickerProvider
   void _pointerMove(PointerMoveEvent e,BoxConstraints c){final lower=_pointerLower[e.pointer],sample=_pointerSamples[e.pointer];if(lower==null||sample==null)return;final raw=_normalizedPosition(e,c);final next=lower?Offset(raw.dx,raw.dy.clamp(.56,.92)):Offset(raw.dx,raw.dy.clamp(.08,.44));final dt=(e.timeStamp-sample.time).inMicroseconds/1000000;if(dt<=0)return;final instant=_limit((next-sample.position)/dt,3.2);if(lower){bottomVelocity=bottomVelocity*.28+instant*.72;bottom=next;}else{topVelocity=topVelocity*.28+instant*.72;top=next;}_pointerSamples[e.pointer]=_PointerSample(next,e.timeStamp);}
   void _pointerUp(PointerEvent e){_pointerSamples.remove(e.pointer);_pointerLower.remove(e.pointer);}
   @override void dispose(){clock.dispose();super.dispose();}
-  @override Widget build(BuildContext context)=>ConfettiOverlay(key:confettiKey,child:Padding(padding:const EdgeInsets.fromLTRB(14,8,14,12),child:Column(children:[
-    GameHeader(title:'الهوكي الهوائي',subtitle:playing?'الأول الذي يسجل 5 أهداف يفوز':(bottomScore>topScore?'فاز اللاعب 1 🎉':'فاز ${bot?'الروبوت':'اللاعب 2'} 🎉'),color:const Color(0xFF0891B2),onReset:_reset),
+  @override Widget build(BuildContext context)=>ConfettiOverlay(key:confettiKey,child:GameBackdrop(palette:GamePalettes.sports,child:Padding(padding:const EdgeInsets.fromLTRB(14,8,14,12),child:Column(children:[
+    GameHeroPanel(palette:GamePalettes.sports,title:'الهوكي الهوائي',subtitle:playing?'الأول الذي يسجل 5 أهداف يفوز':(bottomScore>topScore?'فاز اللاعب 1 🎉':'فاز ${bot?'الروبوت':'اللاعب 2'} 🎉'),icon:Icons.sports_hockey_rounded,trailing:IconButton(onPressed:_reset,icon:const Icon(Icons.refresh_rounded,color:Colors.white))),
     const SizedBox(height:7),Row(children:[Expanded(child:ChoiceChip(label:const Text('ضد الروبوت'),selected:bot,onSelected:(_){bot=true;_reset();})),const SizedBox(width:8),Expanded(child:ChoiceChip(label:const Text('مع صديق'),selected:!bot,onSelected:(_){bot=false;_reset();}))]),const SizedBox(height:7),
     Row(mainAxisAlignment:MainAxisAlignment.center,children:[_Score(name:'اللاعب 1',score:bottomScore,color:const Color(0xFF22D3EE)),const SizedBox(width:18),_Score(name:bot?'الروبوت':'اللاعب 2',score:topScore,color:const Color(0xFFF472B6))]),const SizedBox(height:8),
     Expanded(child:LayoutBuilder(builder:(context,c)=>Listener(onPointerDown:(e)=>_pointerDown(e,c),onPointerMove:(e)=>_pointerMove(e,c),onPointerUp:_pointerUp,onPointerCancel:_pointerUp,child:CustomPaint(size:Size(c.maxWidth,c.maxHeight),painter:_HockeyPainter(puck,bottom,top)))))
-  ])));
+  ]))));
 }
 class _PointerSample{const _PointerSample(this.position,this.time);final Offset position;final Duration time;}
 class _Score extends StatelessWidget{const _Score({required this.name,required this.score,required this.color});final String name;final int score;final Color color;@override Widget build(BuildContext context)=>Container(padding:const EdgeInsets.symmetric(horizontal:14,vertical:7),decoration:BoxDecoration(color:color.withAlpha(25),border:Border.all(color:color),borderRadius:BorderRadius.circular(16)),child:Text('$name  $score',style:TextStyle(color:color,fontWeight:FontWeight.w900,fontSize:16)));}

@@ -8,6 +8,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/letter_voice_service.dart';
+import '../theme/game_design_system.dart';
 import '../services/sound_service.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
@@ -206,9 +207,11 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
     final bestText = bestStreak != null && bestStreak! > 0 ? '  •  أفضل: $bestStreak' : '';
     return ConfettiOverlay(
       key: confettiKey,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-        child: Column(
+      child: GameBackdrop(
+        palette: GamePalettes.learning,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+          child: Column(
           children: <Widget>[
             GameHeader(title: 'فقاعات الحروف', subtitle: 'النقاط: $score  •  متتالية: $streak$bestText', color: const Color(0xFF06B6D4), onReset: () => newRound(resetScore: true)),
             const SizedBox(height: 8),
@@ -281,6 +284,7 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
               ),
             ),
           ],
+          ),
         ),
       ),
     );
