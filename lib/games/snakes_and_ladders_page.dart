@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
@@ -43,13 +44,13 @@ class _SnakesAndLaddersPageState extends State<SnakesAndLaddersPage> {
   }
   void _setBotMode(bool value) {
     if (botMode == value) return;
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     botMode = value;
     _reset();
   }
   void _setPlayers(int value) {
     if (value == playerCount) return;
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     playerCount = value;
     _reset();
   }
@@ -60,7 +61,7 @@ class _SnakesAndLaddersPageState extends State<SnakesAndLaddersPage> {
     final turn = player;
     final rolled = random.nextInt(6) + 1;
     setState(() { rolling = true; diceSpinning = true; event = 'النرد يتدحرج...'; });
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.diceRoll);
     const rollDelays = <int>[65, 72, 82, 96, 115, 145, 185, 235];
     for (var i = 0; i < rollDelays.length; i++) {
       await Future<void>.delayed(Duration(milliseconds: rollDelays[i]));
@@ -92,7 +93,7 @@ class _SnakesAndLaddersPageState extends State<SnakesAndLaddersPage> {
     if (landingSquare > 100) {
       text = 'تحتاج رقمًا مناسبًا للوصول إلى 100';
     } else {
-      SoundService.instance.play('move.wav');
+      SoundService.instance.playEvent(GameSoundEvent.tokenStep);
       for (var square = startPosition + 1; square <= landingSquare; square++) {
         if (!mounted || run != _rollGeneration) return;
         setState(() {
@@ -112,7 +113,7 @@ class _SnakesAndLaddersPageState extends State<SnakesAndLaddersPage> {
         target = destination;
         setState(() => positions[turn] = target);
         text = 'سلم رائع! صعد اللاعب ${turn + 1} من $start إلى $target 🪜';
-        SoundService.instance.play('chime.wav');
+        SoundService.instance.playEvent(GameSoundEvent.ladderClimb);
         await Future<void>.delayed(const Duration(milliseconds: 650));
       } else if (snakes.containsKey(target)) {
         final start = target;
@@ -123,7 +124,7 @@ class _SnakesAndLaddersPageState extends State<SnakesAndLaddersPage> {
         target = destination;
         setState(() => positions[turn] = target);
         text = 'أعاد الثعبان اللاعب ${turn + 1} من $start إلى $target 🐍';
-        SoundService.instance.play('wrong.wav');
+        SoundService.instance.playEvent(GameSoundEvent.snakeSlide);
         await Future<void>.delayed(const Duration(milliseconds: 650));
       }
     }
@@ -135,7 +136,7 @@ class _SnakesAndLaddersPageState extends State<SnakesAndLaddersPage> {
       if (target == 100) {
         winner = turn;
         event = 'فاز اللاعب ${turn + 1} بالسباق 🎉';
-        SoundService.instance.play('win.wav');
+        SoundService.instance.playEvent(turn == 0 ? GameSoundEvent.humanVictory : (botMode ? GameSoundEvent.opponentVictory : GameSoundEvent.friendVictory));
         HapticFeedback.heavyImpact();
         confettiKey.currentState?.burst(count: 34);
         ScoreService.instance.addStars(4);

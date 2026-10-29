@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 class PebbleHarraPage extends StatefulWidget {
@@ -46,7 +47,7 @@ class _PebbleHarraPageState extends State<PebbleHarraPage> {
       _activePit = null;
       _message = 'اختر جورة من صفك';
     });
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
   }
 
   void _setMode(bool againstBot) {
@@ -66,7 +67,7 @@ class _PebbleHarraPageState extends State<PebbleHarraPage> {
 
   Future<void> _choosePit(int pit) async {
     if (_busy || !_isPlayerPit(pit, _player) || _pits[pit] == 0) {
-      if (!_busy) SoundService.instance.play('wrong.wav');
+      if (!_busy) SoundService.instance.playEvent(GameSoundEvent.blockedMove);
       return;
     }
     setState(() {
@@ -88,7 +89,7 @@ class _PebbleHarraPageState extends State<PebbleHarraPage> {
           _pits[current]++;
           _activePit = current;
         });
-        SoundService.instance.play('tap.wav');
+        SoundService.instance.playEvent(GameSoundEvent.stonePlace);
         hand--;
       }
 
@@ -109,7 +110,7 @@ class _PebbleHarraPageState extends State<PebbleHarraPage> {
           _pits[current] = 0;
           _message = 'زوج! جمعت جلّين';
         });
-        await SoundService.instance.play('pop.wav');
+        await SoundService.instance.playEvent(GameSoundEvent.pieceCapture);
       } else {
         setState(() => _message = 'قرعة — انتهى الدور');
       }
@@ -159,7 +160,7 @@ class _PebbleHarraPageState extends State<PebbleHarraPage> {
       _message = winner == -1 ? 'تعادل!' : 'فاز ${winner == 1 && _againstBot ? 'الروبوت' : 'اللاعب ${winner + 1}'}';
     });
     if (winner == 0) await ScoreService.instance.addStars(3);
-    await SoundService.instance.play(winner == 0 ? 'win.wav' : 'pop.wav');
+    await SoundService.instance.playEvent(winner == -1 ? GameSoundEvent.drawResult : (winner == 0 ? GameSoundEvent.humanVictory : (_againstBot ? GameSoundEvent.opponentVictory : GameSoundEvent.friendVictory)));
   }
 
   @override

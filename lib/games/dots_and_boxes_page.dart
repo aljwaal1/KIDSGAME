@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
@@ -41,7 +42,7 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
 
   void _setBotMode(bool value) {
     if (botMode == value) return;
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     botMode = value;
     if (value) playerCount = 2;
     _reset();
@@ -49,7 +50,7 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
 
   void _setPlayers(int value) {
     if (value == playerCount) return;
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     playerCount = value;
     _reset();
   }
@@ -69,7 +70,7 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
   void _claim(bool horizontal, int index) {
     final edges = horizontal ? h : v;
     if (edges[index] >= 0) return;
-    SoundService.instance.play('tap.wav');
+    SoundService.instance.playEvent(GameSoundEvent.drawLine);
     HapticFeedback.selectionClick();
     setState(() {
       edges[index] = player;
@@ -88,14 +89,17 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
         finished = true;
         final best = scores.reduce((a, b) => a > b ? a : b);
         if (scores.where((x) => x == best).length == 1) {
-          SoundService.instance.play('win.wav');
+          final winnerIndex = scores.indexOf(best);
+          SoundService.instance.playEvent(winnerIndex == 0 ? GameSoundEvent.humanVictory : (botMode ? GameSoundEvent.opponentVictory : GameSoundEvent.friendVictory));
           confettiKey.currentState?.burst();
           ScoreService.instance.addStars(3);
+        } else {
+          SoundService.instance.playEvent(GameSoundEvent.drawResult);
         }
       } else if (won == 0) {
         player = (player + 1) % playerCount;
       } else {
-        SoundService.instance.play('pop.wav');
+        SoundService.instance.playEvent(GameSoundEvent.boxComplete, volumeBoost: 1 + won * .08);
       }
     });
     _scheduleBot();

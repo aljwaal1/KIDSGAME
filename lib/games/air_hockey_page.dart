@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
@@ -26,10 +27,10 @@ class _AirHockeyPageState extends State<AirHockeyPage> with SingleTickerProvider
       final old=top;top=Offset((top.dx+step.dx).clamp(.10,.90),(top.dy+step.dy).clamp(.08,.43));topVelocity=(top-old)/dt;
     }else if(bot){topVelocity*=pow(.20,dt).toDouble();}
     const radius=.042;
-    if(p.dx<radius||p.dx>1-radius){v=Offset(-v.dx*.94,v.dy);p=Offset(p.dx.clamp(radius,1-radius),p.dy);SoundService.instance.play('pop.wav',volumeBoost:1.55);}
+    if(p.dx<radius||p.dx>1-radius){v=Offset(-v.dx*.94,v.dy);p=Offset(p.dx.clamp(radius,1-radius),p.dy);SoundService.instance.playEvent(GameSoundEvent.hockeyWallHit);}
     final inGoal=p.dx>.31&&p.dx<.69;
-    if(!inGoal&&p.dy<radius){v=Offset(v.dx,-v.dy*.94);p=Offset(p.dx,radius);SoundService.instance.play('pop.wav',volumeBoost:1.55);}
-    if(!inGoal&&p.dy>1-radius){v=Offset(v.dx,-v.dy*.94);p=Offset(p.dx,1-radius);SoundService.instance.play('pop.wav',volumeBoost:1.55);}
+    if(!inGoal&&p.dy<radius){v=Offset(v.dx,-v.dy*.94);p=Offset(p.dx,radius);SoundService.instance.playEvent(GameSoundEvent.hockeyWallHit);}
+    if(!inGoal&&p.dy>1-radius){v=Offset(v.dx,-v.dy*.94);p=Offset(p.dx,1-radius);SoundService.instance.playEvent(GameSoundEvent.hockeyWallHit);}
     final lowerHit=_collide(bottom,p,bottomVelocity,bottomContact,v);p=lowerHit.position;v=lowerHit.velocity;bottomContact=lowerHit.contact;
     final upperHit=_collide(top,p,topVelocity,topContact,v);p=upperHit.position;v=upperHit.velocity;topContact=upperHit.contact;
     bottomVelocity*=pow(.08,dt).toDouble();topVelocity*=pow(.08,dt).toDouble();
@@ -51,10 +52,10 @@ class _AirHockeyPageState extends State<AirHockeyPage> with SingleTickerProvider
     final minimum=paddle==top&&bot ? .48 : .25;
     if(result.distance<minimum)result=n*minimum+paddleSpeed*.72;
     result=_limit(result,2.65);
-    SoundService.instance.play('pop.wav',volumeBoost:1.8);
+    SoundService.instance.playEvent(GameSoundEvent.hockeyPaddleHit);
     return(position:paddle+n*.109,velocity:result,contact:true);
   }
-  void _goal(bool human){SoundService.instance.play('chime.wav',volumeBoost:1.35);if(bottomScore>=5||topScore>=5){playing=false;confettiKey.currentState?.burst(count:34);SoundService.instance.play('win.wav');}setState((){puck=const Offset(.5,.5);velocity=Offset((Random().nextDouble()-.5)*.32,human ? .34 : -.34);bottomContact=topContact=false;_slowTime=0;});}
+  void _goal(bool human){SoundService.instance.playEvent(GameSoundEvent.hockeyGoal);if(bottomScore>=5||topScore>=5){playing=false;confettiKey.currentState?.burst(count:34);SoundService.instance.playEvent(bottomScore>topScore?GameSoundEvent.humanVictory:(bot?GameSoundEvent.opponentVictory:GameSoundEvent.friendVictory));}setState((){puck=const Offset(.5,.5);velocity=Offset((Random().nextDouble()-.5)*.32,human ? .34 : -.34);bottomContact=topContact=false;_slowTime=0;});}
   void _reset(){setState((){bottomScore=0;topScore=0;playing=true;puck=const Offset(.5,.5);velocity=const Offset(.24,.34);bottom=const Offset(.5,.84);top=const Offset(.5,.16);bottomVelocity=Offset.zero;topVelocity=Offset.zero;bottomContact=topContact=false;_slowTime=0;_lastMicros=_physicsClock.elapsedMicroseconds;});}
   Offset _limit(Offset value,double maximum)=>value.distance>maximum?value/value.distance*maximum:value;
   Offset _normalizedPosition(PointerEvent e,BoxConstraints c)=>Offset((e.localPosition.dx/c.maxWidth).clamp(.1,.9),(e.localPosition.dy/c.maxHeight).clamp(.08,.92));

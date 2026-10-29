@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 enum _MemoryLevel { easy, medium, hard, expert }
@@ -134,12 +135,12 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
       matched = 0;
       locked = false;
     });
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
   }
 
   Future<void> _tap(int index) async {
     if (locked || cards[index].open || cards[index].done) return;
-    await SoundService.instance.play('tap.wav');
+    await SoundService.instance.playEvent(GameSoundEvent.cardFlip);
     setState(() => cards[index].open = true);
     if (firstIndex == null) {
       firstIndex = index;
@@ -156,7 +157,7 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
         cards[index].done = true;
         matched += 2;
       });
-      await SoundService.instance.play('pop.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.cardMatch);
       if (matched == cards.length) {
         final int stars = switch (level) {
           _MemoryLevel.easy => 4,
@@ -165,7 +166,7 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
           _MemoryLevel.expert => 12,
         };
         await ScoreService.instance.addStars(stars);
-        await SoundService.instance.play('win.wav');
+        await SoundService.instance.playEvent(GameSoundEvent.humanVictory);
       }
     } else {
       setState(() => locked = true);
@@ -176,7 +177,7 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
         cards[index].open = false;
         locked = false;
       });
-      await SoundService.instance.play('wrong.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.cardMismatch);
     }
   }
 

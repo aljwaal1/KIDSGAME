@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 class QuickMathPage extends StatefulWidget {
@@ -45,13 +46,13 @@ class _QuickMathPageState extends State<QuickMathPage> {
 
   Future<void> _pick(int value) async {
     if (value == answer) {
-      await SoundService.instance.play('pop.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.correctAnswer);
       await ScoreService.instance.addStars(1);
       if (!mounted) return;
       setState(() => score++);
       _round();
     } else {
-      await SoundService.instance.play('wrong.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.wrongAnswer);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حاول مرة أخرى')));
     }

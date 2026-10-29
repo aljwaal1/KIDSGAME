@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
@@ -26,7 +27,7 @@ class _CheckersPageState extends State<CheckersPage> {
   }
   List<_Move> _allMoves(int p){final all=<_Move>[];for(var i=0;i<64;i++)if(_mine(board[i],p))all.addAll(_pieceMoves(i,p));final captures=all.where((m)=>m.captured!=null).toList();return captures.isNotEmpty?captures:all;}
   void _tap(int index){if(winner!=null||(bot&&player==1))return;if(selected==null){if(_mine(board[index],player)&&_allMoves(player).any((m)=>m.from==index))setState(()=>selected=index);return;}final valid=_allMoves(player).where((m)=>m.from==selected&&m.to==index).toList();if(valid.isEmpty){setState(()=>selected=_mine(board[index],player)?index:null);return;}_play(valid.first);}
-  void _play(_Move m){SoundService.instance.play('move.wav');setState((){var piece=board[m.from];board[m.from]=0;board[m.to]=piece;if(m.captured!=null)board[m.captured!]=0;final row=m.to~/8;if(piece==1&&row==0)board[m.to]=3;if(piece==2&&row==7)board[m.to]=4;if(m.captured!=null&&_pieceMoves(m.to,player,capturesOnly:true).any((x)=>x.captured!=null)){selected=m.to;return;}selected=null;player=1-player;if(_allMoves(player).isEmpty){winner=1-player;confettiKey.currentState?.burst();SoundService.instance.play('win.wav');}});if(winner==null&&bot&&player==1)_bot();}
+  void _play(_Move m){final piece=board[m.from];final row=m.to~/8;final promoted=(piece==1&&row==0)||(piece==2&&row==7);SoundService.instance.playEvent(m.captured!=null?GameSoundEvent.pieceCapture:(promoted?GameSoundEvent.piecePromote:GameSoundEvent.pieceMove));setState((){board[m.from]=0;board[m.to]=piece;if(m.captured!=null)board[m.captured!]=0;if(piece==1&&row==0)board[m.to]=3;if(piece==2&&row==7)board[m.to]=4;if(m.captured!=null&&_pieceMoves(m.to,player,capturesOnly:true).any((x)=>x.captured!=null)){selected=m.to;return;}selected=null;player=1-player;if(_allMoves(player).isEmpty){winner=1-player;confettiKey.currentState?.burst();SoundService.instance.playEvent(winner==0?GameSoundEvent.humanVictory:(bot?GameSoundEvent.opponentVictory:GameSoundEvent.friendVictory));}});if(winner==null&&bot&&player==1)_bot();}
   void _bot(){timer?.cancel();timer=Timer(const Duration(milliseconds:650),(){if(!mounted||winner!=null||player!=1)return;final moves=selected!=null?_pieceMoves(selected!,1,capturesOnly:true).where((m)=>m.captured!=null).toList():_allMoves(1);if(moves.isEmpty)return;final captures=moves.where((m)=>m.captured!=null).toList();_play((captures.isNotEmpty?captures:moves)[random.nextInt((captures.isNotEmpty?captures:moves).length)]);});}
   @override void dispose(){timer?.cancel();super.dispose();}
   @override

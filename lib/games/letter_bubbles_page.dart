@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
+import '../services/letter_voice_service.dart';
 import '../services/sound_service.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
@@ -124,6 +126,7 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
     if (delay > Duration.zero) await Future<void>.delayed(delay);
     if (_voiceDisposed || _voiceVolume == 0) return;
     final name = _arabicSpokenLetterNames[value] ?? _arabicLetterNames[value] ?? value;
+    if (await LetterVoiceService.playArabic(value)) return;
     try {
       await _letterVoice.stop();
       await _letterVoice.setLanguage(_voiceLanguage);
@@ -168,14 +171,14 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
     var next = false;
     setState(() {
       if (selectedLetter == target) {
-        SoundService.instance.play('pop.wav');
+        SoundService.instance.playEvent(GameSoundEvent.bubblePop);
         HapticFeedback.lightImpact();
         score++;
         streak++;
         bubbles[index] = '';
         if (!bubbles.contains(target)) next = true;
       } else {
-        SoundService.instance.play('wrong.wav');
+        SoundService.instance.playEvent(GameSoundEvent.wrongAnswer);
         HapticFeedback.lightImpact();
         mistakes++;
         streak = 0;
@@ -186,7 +189,7 @@ class _BubbleLettersPageState extends State<BubbleLettersPage> with SingleTicker
     unawaited(_speakLetter(selectedLetter, delay: const Duration(milliseconds: 260)));
 
     if (next) {
-      SoundService.instance.play('chime.wav');
+      SoundService.instance.playEvent(GameSoundEvent.roundComplete);
       confettiKey.currentState?.burst(count: 16);
       ScoreService.instance.addStars(1);
       ScoreService.instance.reportStreak('bubbles', streak).then((ok) {

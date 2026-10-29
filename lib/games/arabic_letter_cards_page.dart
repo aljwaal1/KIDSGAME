@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import '../services/game_audio_event.dart';
+import '../services/letter_voice_service.dart';
 import '../services/sound_service.dart';
 
 class ArabicLetterCardsPage extends StatefulWidget {
@@ -85,6 +87,7 @@ class _ArabicLetterCardsPageState extends State<ArabicLetterCardsPage> {
 
   Future<void> _speak() async {
     if (_disposed || _volume == 0) return;
+    if (await LetterVoiceService.playArabic(_letter)) return;
     try {
       await _tts.stop();
       await _tts.setLanguage(_voiceLanguage);
@@ -99,7 +102,7 @@ class _ArabicLetterCardsPageState extends State<ArabicLetterCardsPage> {
 
   void _go(int delta) {
     setState(() => _index = (_index + delta + _letters.length) % _letters.length);
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     unawaited(Future<void>.delayed(const Duration(milliseconds: 100), _speak));
   }
 

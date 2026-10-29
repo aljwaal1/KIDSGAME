@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
@@ -44,7 +45,7 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
 
   void setMode(TicTacMode value) {
     if (mode == value) return;
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     _cancelAiMove();
     setState(() => mode = value);
     reset();
@@ -58,7 +59,7 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
 
   void _place(int index) {
     if (index < 0 || index >= board.length || board[index].isNotEmpty || finished) return;
-    SoundService.instance.play('tap.wav');
+    SoundService.instance.playEvent(player == 'X' ? GameSoundEvent.pieceDrop : GameSoundEvent.stonePlace);
     setState(() {
       board[index] = player;
       _afterMove();
@@ -77,7 +78,7 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
       if (symbol == 'X') { xWins++; message = 'فاز اللاعب X 🎉'; }
       else { oWins++; message = mode == TicTacMode.computer ? 'فاز الكمبيوتر 🤖' : 'فاز اللاعب O 🎉'; }
       HapticFeedback.heavyImpact();
-      SoundService.instance.play('win.wav');
+      SoundService.instance.playEvent(symbol == 'X' ? GameSoundEvent.humanVictory : (mode == TicTacMode.computer ? GameSoundEvent.opponentVictory : GameSoundEvent.friendVictory));
       lineController.forward(from: 0);
       confettiKey.currentState?.burst();
       ScoreService.instance.addStars(2);
@@ -87,6 +88,7 @@ class _TicTacToePageState extends State<TicTacToePage> with SingleTickerProvider
       aiThinking = false;
       _aiTimer?.cancel();
       draws++;
+      SoundService.instance.playEvent(GameSoundEvent.drawResult);
       HapticFeedback.mediumImpact();
     } else {
       player = player == 'X' ? 'O' : 'X';

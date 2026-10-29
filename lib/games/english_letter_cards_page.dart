@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import '../services/game_audio_event.dart';
+import '../services/letter_voice_service.dart';
 import '../services/sound_service.dart';
 
 class EnglishLetterCardsPage extends StatefulWidget {
@@ -92,6 +94,7 @@ class _EnglishLetterCardsPageState extends State<EnglishLetterCardsPage> {
     if (_disposed || _volume == 0) return;
     if (delay > Duration.zero) await Future<void>.delayed(delay);
     if (_disposed || _volume == 0) return;
+    if (await LetterVoiceService.playEnglish(_capital)) return;
     try {
       await _tts.stop();
       await _tts.setLanguage(_voiceLanguage);
@@ -113,7 +116,7 @@ class _EnglishLetterCardsPageState extends State<EnglishLetterCardsPage> {
 
   void _go(int delta) {
     setState(() => _index = (_index + delta + _letters.length) % _letters.length);
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
     unawaited(_speak(delay: const Duration(milliseconds: 220)));
   }
 

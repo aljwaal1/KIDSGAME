@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 class SmartMazePage extends StatefulWidget {
@@ -27,7 +28,7 @@ class _SmartMazePageState extends State<SmartMazePage> {
     if (nr < 0 || nr >= size || nc < 0 || nc >= size) return;
     final int next = nr * size + nc;
     if (walls.contains(next)) {
-      await SoundService.instance.play('wrong.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.blockedMove);
       return;
     }
     busy = true;
@@ -35,11 +36,11 @@ class _SmartMazePageState extends State<SmartMazePage> {
       hero = next;
       moves++;
     });
-    await SoundService.instance.play('move.wav');
+    await SoundService.instance.playEvent(GameSoundEvent.tokenStep);
     if (hero == goal) {
       completed = true;
       await ScoreService.instance.addStars(moves <= 10 ? 5 : 3);
-      await SoundService.instance.play('win.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.humanVictory);
       if (!mounted) return;
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('وصلت للنجمة خلال $moves خطوة')));
@@ -54,7 +55,7 @@ class _SmartMazePageState extends State<SmartMazePage> {
       completed = false;
       busy = false;
     });
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
   }
 
   @override

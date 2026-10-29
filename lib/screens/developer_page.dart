@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 
+import '../services/game_audio_event.dart';
 import '../services/score_service.dart';
 import '../services/sound_service.dart';
 
 class DeveloperPage extends StatelessWidget {
   const DeveloperPage({super.key});
 
-  static const List<(String, String)> _sounds = <(String, String)>[
-    ('نقرة', 'click.wav'),
-    ('لمس', 'tap.wav'),
-    ('حركة', 'move.wav'),
-    ('صحيح', 'pop.wav'),
-    ('خطأ', 'wrong.wav'),
-    ('إكمال', 'chime.wav'),
-    ('فوز', 'win.wav'),
+  static const List<(String, GameSoundEvent)> _sounds = <(String, GameSoundEvent)>[
+    ('واجهة', GameSoundEvent.uiSelect),
+    ('حركة قطعة', GameSoundEvent.pieceMove),
+    ('اصطدام', GameSoundEvent.hockeyPaddleHit),
+    ('صحيح', GameSoundEvent.correctAnswer),
+    ('خطأ لطيف', GameSoundEvent.wrongAnswer),
+    ('إكمال', GameSoundEvent.roundComplete),
+    ('فوز', GameSoundEvent.humanVictory),
+    ('خسارة', GameSoundEvent.opponentVictory),
+    ('تعادل', GameSoundEvent.drawResult),
+    ('ركلة', GameSoundEvent.penaltyKick),
+    ('شباك', GameSoundEvent.penaltyNet),
+    ('تصدي', GameSoundEvent.penaltySave),
   ];
 
   Future<void> _resetProgress(BuildContext context) async {
@@ -66,7 +72,7 @@ class DeveloperPage extends StatelessWidget {
                 children: <Widget>[
                   for (final sound in _sounds)
                     FilledButton.tonalIcon(
-                      onPressed: () => SoundService.instance.play(sound.$2),
+                      onPressed: () => SoundService.instance.playEvent(sound.$2),
                       icon: const Icon(Icons.volume_up_rounded),
                       label: Text(sound.$1),
                     ),

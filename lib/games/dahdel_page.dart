@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 class DahdelPage extends StatefulWidget {
@@ -118,7 +119,7 @@ class _DahdelPageState extends State<DahdelPage> {
       _throws++;
       _message = '${robot ? 'الروبوت' : 'اللاعب ${throwingPlayer + 1}'} رمى الجلّ';
     });
-    SoundService.instance.play('move.wav', volumeBoost: 1.6);
+    SoundService.instance.playEvent(GameSoundEvent.marbleLaunch);
 
     var position = const Offset(.5, .90);
     var velocity = initialVelocity;
@@ -130,7 +131,7 @@ class _DahdelPageState extends State<DahdelPage> {
       velocity *= .982;
       if (velocity.distance > .12 && DateTime.now().difference(_lastRollSound).inMilliseconds > 230) {
         _lastRollSound = DateTime.now();
-        SoundService.instance.play('move.wav', volumeBoost: 1.45);
+        SoundService.instance.playEvent(GameSoundEvent.marbleRoll);
       }
       if (position.dx < .035 || position.dx > .965) {
         velocity = Offset(-velocity.dx * .72, velocity.dy);
@@ -158,9 +159,9 @@ class _DahdelPageState extends State<DahdelPage> {
         _seedGround();
       });
       HapticFeedback.heavyImpact();
-      SoundService.instance.play('pop.wav', volumeBoost: 1.8);
+      SoundService.instance.playEvent(GameSoundEvent.pieceCapture);
       await Future<void>.delayed(const Duration(milliseconds: 150));
-      SoundService.instance.play('win.wav', volumeBoost: 1.25);
+      SoundService.instance.playEvent(GameSoundEvent.roundComplete);
       ScoreService.instance.addStars(2);
       await Future<void>.delayed(const Duration(milliseconds: 950));
     } else {
@@ -168,7 +169,7 @@ class _DahdelPageState extends State<DahdelPage> {
         _groundMarbles.add(position);
         _message = 'لم يصب — بقي الجلّ على الأرض';
       });
-      SoundService.instance.play('tap.wav');
+      SoundService.instance.playEvent(GameSoundEvent.softMiss);
       await Future<void>.delayed(const Duration(milliseconds: 650));
     }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/score_service.dart';
+import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
 
 class MiniSudokuPage extends StatefulWidget {
@@ -36,18 +37,18 @@ class _MiniSudokuPageState extends State<MiniSudokuPage> {
     busy = true;
     if (solution[selected] == number) {
       setState(() => values[selected] = number);
-      await SoundService.instance.play('pop.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.correctAnswer);
       if (!values.contains(0)) {
         completed = true;
         await ScoreService.instance.addStars(5);
-        await SoundService.instance.play('win.wav');
+        await SoundService.instance.playEvent(GameSoundEvent.humanVictory);
         if (!mounted) return;
         setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ممتاز! أكملت السودوكو')));
       }
     } else {
       setState(() => mistakes++);
-      await SoundService.instance.play('wrong.wav');
+      await SoundService.instance.playEvent(GameSoundEvent.wrongAnswer);
     }
     busy = false;
   }
@@ -60,7 +61,7 @@ class _MiniSudokuPageState extends State<MiniSudokuPage> {
       completed = false;
       busy = false;
     });
-    SoundService.instance.play('click.wav');
+    SoundService.instance.playEvent(GameSoundEvent.uiSelect);
   }
 
   @override
