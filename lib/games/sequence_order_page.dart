@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 
 class SequenceOrderPage extends StatefulWidget {
   const SequenceOrderPage({super.key});
@@ -82,9 +83,11 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
         title: const Text('رتّب التسلسل'),
         actions: <Widget>[IconButton(onPressed: _reset, tooltip: 'خلط جديد', icon: const Icon(Icons.shuffle_rounded))],
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-        child: Column(
+      body: GameBackdrop(
+        palette: GamePalettes.reasoning,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+          child: Column(
           children: <Widget>[
             _Header(score: score, tries: tries),
             const SizedBox(height: 8),
@@ -101,6 +104,7 @@ class _SequenceOrderPageState extends State<SequenceOrderPage> {
             const SizedBox(height: 8),
             SizedBox(width: double.infinity, height: 48, child: FilledButton.icon(onPressed: completed || checking ? null : _check, icon: const Icon(Icons.check_rounded), label: Text(completed ? 'تم الحل' : 'تحقق من الترتيب'))),
           ],
+          ),
         ),
       ),
     );

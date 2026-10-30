@@ -7,6 +7,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/letter_voice_service.dart';
+import '../theme/game_design_system.dart';
 import '../services/sound_service.dart';
 
 class ArabicLetterColoringPage extends StatefulWidget {
@@ -203,8 +204,10 @@ class _ArabicLetterColoringPageState extends State<ArabicLetterColoringPage> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Padding(
+      body: GameBackdrop(
+        palette: GamePalettes.learning,
+        child: SafeArea(
+          child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
           child: Column(
             children: <Widget>[
@@ -368,6 +371,7 @@ class _ArabicLetterColoringPageState extends State<ArabicLetterColoringPage> {
                 ],
               ),
             ],
+          ),
           ),
         ),
       ),

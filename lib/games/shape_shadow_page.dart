@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 
 class ShapeShadowPage extends StatefulWidget {
   const ShapeShadowPage({super.key});
@@ -58,9 +59,11 @@ class _ShapeShadowPageState extends State<ShapeShadowPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('ظل الشكل')),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-        child: Column(
+      body: GameBackdrop(
+        palette: GamePalettes.puzzle,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+          child: Column(
           children: <Widget>[
             _ShadowHeader(score: score),
             const SizedBox(height: 10),
@@ -100,6 +103,7 @@ class _ShapeShadowPageState extends State<ShapeShadowPage> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

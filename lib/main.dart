@@ -61,6 +61,7 @@ class _GamesHomeState extends State<GamesHome> {
 
   @override
   Widget build(BuildContext context) {
+    final disableAnimations = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final List<Widget> pages = <Widget>[
       HomeGamesPage(onSelectGame: _selectTab),
       const TicTacToePage(),
@@ -76,7 +77,13 @@ class _GamesHomeState extends State<GamesHome> {
           SizedBox(width: 4),
         ],
       ),
-      body: pages[tab],
+      body: AnimatedSwitcher(
+        duration: disableAnimations ? Duration.zero : const Duration(milliseconds: 220),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+        child: KeyedSubtree(key: ValueKey<int>(tab), child: pages[tab]),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: tab,
         onDestinationSelected: _selectTab,

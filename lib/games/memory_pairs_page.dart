@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 
 enum _MemoryLevel { easy, medium, hard, expert }
 
@@ -188,9 +189,11 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
         title: const Text('ذاكرة الصور'),
         actions: <Widget>[IconButton(onPressed: _newGame, icon: const Icon(Icons.refresh_rounded))],
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-        child: Column(
+      body: GameBackdrop(
+        palette: GamePalettes.memory,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+          child: Column(
           children: <Widget>[
             Container(
               width: double.infinity,
@@ -287,6 +290,7 @@ class _MemoryPairsPageState extends State<MemoryPairsPage> {
             ),
             const SizedBox(height: 6),
           ],
+          ),
         ),
       ),
     );

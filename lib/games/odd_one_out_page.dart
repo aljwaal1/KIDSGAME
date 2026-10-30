@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 
 class OddOneOutPage extends StatefulWidget {
   const OddOneOutPage({super.key});
@@ -81,9 +82,11 @@ class _OddOneOutPageState extends State<OddOneOutPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('ابحث عن المختلف')),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-        child: Column(
+      body: GameBackdrop(
+        palette: GamePalettes.puzzle,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+          child: Column(
           children: <Widget>[
             _TopCard(title: 'أي صورة لا تشبه الباقي؟', subtitle: 'النقاط: $score  •  المستوى: $level', icon: Icons.visibility_rounded, color: const Color(0xFF14B8A6)),
             const SizedBox(height: 10),
@@ -99,6 +102,7 @@ class _OddOneOutPageState extends State<OddOneOutPage> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

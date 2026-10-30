@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
 
@@ -144,8 +145,10 @@ class _AnimalPicturePuzzlePageState extends State<AnimalPicturePuzzlePage> {
   Widget build(BuildContext context) {
     final bestText = bestMoves == null ? '' : '  •  الأفضل: $bestMoves';
     return Scaffold(
-      body: SafeArea(
-        child: ConfettiOverlay(
+      body: GameBackdrop(
+        palette: GamePalettes.puzzle,
+        child: SafeArea(
+          child: ConfettiOverlay(
           key: confettiKey,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
@@ -167,6 +170,7 @@ class _AnimalPicturePuzzlePageState extends State<AnimalPicturePuzzlePage> {
                 Expanded(child: _buildPuzzle()),
               ],
             ),
+          ),
           ),
         ),
       ),

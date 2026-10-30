@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 import '../widgets/confetti_overlay.dart';
-import '../widgets/game_header.dart';
 
 class PenaltyShootoutPage extends StatefulWidget {
   const PenaltyShootoutPage({super.key});
@@ -177,15 +177,18 @@ class _PenaltyShootoutPageState extends State<PenaltyShootoutPage>
       data: media.copyWith(textScaler: const TextScaler.linear(1.0)),
       child: ConfettiOverlay(
         key: _confettiKey,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
-          child: Column(
+        child: GameBackdrop(
+          palette: GamePalettes.field,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+            child: Column(
             children: <Widget>[
-            GameHeader(
+            GameHeroPanel(
+              palette: GamePalettes.field,
               title: 'ركلات الترجيح',
               subtitle: _instruction,
-              color: const Color(0xFF087F5B),
-              onReset: _reset,
+              icon: Icons.sports_soccer_rounded,
+              trailing: IconButton(onPressed: _reset, icon: const Icon(Icons.refresh_rounded, color: Colors.white)),
             ),
             const SizedBox(height: 6),
             Row(
@@ -298,6 +301,7 @@ class _PenaltyShootoutPageState extends State<PenaltyShootoutPage>
               ),
             ),
             ],
+            ),
           ),
         ),
       ),
