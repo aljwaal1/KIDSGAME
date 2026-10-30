@@ -26,6 +26,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/sounds/
+    - assets/sounds/game/
     - assets/images/puzzle/
 
 flutter_launcher_icons:
