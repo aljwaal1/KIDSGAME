@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
 
@@ -37,9 +38,11 @@ class _CheckersPageState extends State<CheckersPage> {
         : bot && player == 1 ? 'الروبوت يفكر...' : 'دور اللاعب ${player + 1}';
     return ConfettiOverlay(
       key: confettiKey,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-        child: Column(children: <Widget>[
+      child: GameBackdrop(
+        palette: GamePalettes.strategy,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+          child: Column(children: <Widget>[
           GameHeader(title: 'الداما', subtitle: subtitle, color: const Color(0xFFB91C1C), onReset: _reset),
           const SizedBox(height: 8),
           Row(children: <Widget>[
@@ -85,7 +88,8 @@ class _CheckersPageState extends State<CheckersPage> {
               },
             ),
           ))),
-        ]),
+          ]),
+        ),
       ),
     );
   }

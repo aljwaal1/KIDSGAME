@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 
 class RingGuessPage extends StatefulWidget {
   const RingGuessPage({super.key});
@@ -62,9 +63,11 @@ class _RingGuessPageState extends State<RingGuessPage> with SingleTickerProvider
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('الخاتم')),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-        child: Column(
+      body: GameBackdrop(
+        palette: GamePalettes.traditional,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+          child: Column(
           children: <Widget>[
             _RingHeader(score: score, tries: tries, message: message),
             const SizedBox(height: 10),
@@ -87,6 +90,7 @@ class _RingGuessPageState extends State<RingGuessPage> with SingleTickerProvider
             const SizedBox(height: 8),
             _RingHint(),
           ],
+          ),
         ),
       ),
     );

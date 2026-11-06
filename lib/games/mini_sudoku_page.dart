@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 
 class MiniSudokuPage extends StatefulWidget {
   const MiniSudokuPage({super.key});
@@ -66,7 +67,7 @@ class _MiniSudokuPageState extends State<MiniSudokuPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('سودوكو الأطفال'), actions: <Widget>[IconButton(onPressed: _reset, icon: const Icon(Icons.refresh_rounded))]), body: ListView(padding: const EdgeInsets.fromLTRB(18, 12, 18, 100), children: <Widget>[
+    return Scaffold(appBar: AppBar(title: const Text('سودوكو الأطفال'), actions: <Widget>[IconButton(onPressed: _reset, icon: const Icon(Icons.refresh_rounded))]), body: GameBackdrop(palette: GamePalettes.reasoning, child: ListView(padding: const EdgeInsets.fromLTRB(18, 12, 18, 100), children: <Widget>[
       Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(26), gradient: const LinearGradient(colors: <Color>[Color(0xFFF97316), Color(0xFFFACC15)])), child: Text(completed ? 'ممتاز! اكتملت اللوحة 🎉\nالأخطاء: $mistakes' : 'املأ الأرقام من 1 إلى 4\nالأخطاء: $mistakes', style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 22, fontWeight: FontWeight.w900))),
       const SizedBox(height: 18),
       AspectRatio(aspectRatio: 1, child: GridView.builder(physics: const NeverScrollableScrollPhysics(), itemCount: 16, gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, mainAxisSpacing: 6, crossAxisSpacing: 6), itemBuilder: (BuildContext context, int index) {
@@ -76,6 +77,6 @@ class _MiniSudokuPageState extends State<MiniSudokuPage> {
       })),
       const SizedBox(height: 18),
       Row(children: <Widget>[for (int n = 1; n <= 4; n++) Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 5), child: FilledButton.tonal(onPressed: completed || busy ? null : () => _put(n), child: Text('$n', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)))))]),
-    ]));
+    ])));
   }
 }

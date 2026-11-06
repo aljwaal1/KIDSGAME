@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
 
@@ -121,9 +122,11 @@ class _ConnectFourPageState extends State<ConnectFourPage> {
       data: media.copyWith(textScaler: const TextScaler.linear(1.0)),
       child: ConfettiOverlay(
         key: confettiKey,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-          child: Column(children: <Widget>[
+        child: GameBackdrop(
+          palette: GamePalettes.strategy,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            child: Column(children: <Widget>[
             GameHeader(title: 'أربع قطع في صف', subtitle: message, color: const Color(0xFF2563EB), onReset: _reset),
             const SizedBox(height: 7),
             Row(children: <Widget>[
@@ -260,7 +263,8 @@ class _ConnectFourPageState extends State<ConnectFourPage> {
                 Flexible(child: Text('اضغط أي عمود لإسقاط القطعة • صِل أربع قطع لتفوز', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF1E3A8A), fontSize: 12, fontWeight: FontWeight.w900))),
               ]),
             ),
-          ]),
+            ]),
+          ),
         ),
       ),
     );

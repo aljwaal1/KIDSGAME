@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 
 class SeegaPage extends StatefulWidget {
   const SeegaPage({super.key});
@@ -183,9 +184,11 @@ class _SeegaPageState extends State<SeegaPage> {
     final blueCount = board.where((v) => v == 2).length;
     return Scaffold(
       appBar: AppBar(title: const Text('السيجا'), actions: <Widget>[IconButton(tooltip: 'طريقة اللعب', onPressed: _showInstructions, icon: const Icon(Icons.help_outline_rounded)), IconButton(onPressed: reset, icon: const Icon(Icons.refresh_rounded))]),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-        child: Column(
+      body: GameBackdrop(
+        palette: GamePalettes.traditional,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+          child: Column(
           children: <Widget>[
             _SeegaHeader(playerName: playerName, playerColor: playerColor, message: message, red: redCount, blue: blueCount, redWins: redWins, blueWins: blueWins),
             const SizedBox(height: 7),
@@ -208,6 +211,7 @@ class _SeegaPageState extends State<SeegaPage> {
             const SizedBox(height: 8),
             _SeegaHint(placing: placingPhase),
           ],
+          ),
         ),
       ),
     );

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 
 class QuickMathPage extends StatefulWidget {
   const QuickMathPage({super.key});
@@ -62,9 +63,11 @@ class _QuickMathPageState extends State<QuickMathPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('الحساب السريع')),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-        child: Column(
+      body: GameBackdrop(
+        palette: GamePalettes.learning,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+          child: Column(
           children: <Widget>[
             Container(
               height: 150,
@@ -89,6 +92,7 @@ class _QuickMathPageState extends State<QuickMathPage> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

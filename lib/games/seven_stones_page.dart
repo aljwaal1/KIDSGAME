@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 
 enum _SevenPhase { throwBall, rebuild, won, lost }
 
@@ -195,11 +196,18 @@ class _SevenStonesPageState extends State<SevenStonesPage>
         title: const Text('سبع حجارة'),
         actions: <Widget>[IconButton(onPressed: _reset, icon: const Icon(Icons.refresh_rounded))],
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 7, 12, 12),
-        child: Column(
+      body: GameBackdrop(
+        palette: GamePalettes.field,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 7, 12, 12),
+          child: Column(
           children: <Widget>[
-            _SevenHeader(title: _title, phase: _phase, rebuilt: _rebuilt, seconds: _seconds, wins: _wins, misses: _misses),
+            GameHeroPanel(
+              palette: GamePalettes.field,
+              title: _title,
+              subtitle: 'الحجارة: $_rebuilt/7  •  الوقت: $_seconds  •  الفوز: $_wins  •  الإخفاق: $_misses',
+              icon: Icons.layers_rounded,
+            ),
             const SizedBox(height: 7),
             Expanded(
               child: LayoutBuilder(
@@ -241,6 +249,7 @@ class _SevenStonesPageState extends State<SevenStonesPage>
             const SizedBox(height: 7),
             _SevenInstructions(phase: _phase, onRestart: _reset),
           ],
+          ),
         ),
       ),
     );

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 import '../widgets/confetti_overlay.dart';
 import '../widgets/game_header.dart';
 
@@ -149,7 +150,9 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
       data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
       child: ConfettiOverlay(
         key: confettiKey,
-        child: LayoutBuilder(builder: (context, page) {
+        child: GameBackdrop(
+          palette: GamePalettes.strategy,
+          child: LayoutBuilder(builder: (context, page) {
         final boardSize = min(page.maxWidth - 52, 320.0).toDouble();
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 18),
@@ -244,7 +247,8 @@ class _DotsAndBoxesPageState extends State<DotsAndBoxesPage> {
             const SizedBox(height: 8),
           ]),
         );
-        }),
+          }),
+        ),
       ),
     );
   }

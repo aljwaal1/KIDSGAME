@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/score_service.dart';
 import '../services/game_audio_event.dart';
 import '../services/sound_service.dart';
+import '../theme/game_design_system.dart';
 
 class SmartMazePage extends StatefulWidget {
   const SmartMazePage({super.key});
@@ -60,7 +61,7 @@ class _SmartMazePageState extends State<SmartMazePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('المتاهة الذكية'), actions: <Widget>[IconButton(onPressed: _reset, icon: const Icon(Icons.refresh_rounded))]), body: ListView(padding: const EdgeInsets.fromLTRB(18, 12, 18, 100), children: <Widget>[
+    return Scaffold(appBar: AppBar(title: const Text('المتاهة الذكية'), actions: <Widget>[IconButton(onPressed: _reset, icon: const Icon(Icons.refresh_rounded))]), body: GameBackdrop(palette: GamePalettes.reasoning, child: ListView(padding: const EdgeInsets.fromLTRB(18, 12, 18, 100), children: <Widget>[
       Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(26), gradient: const LinearGradient(colors: <Color>[Color(0xFF22C55E), Color(0xFF14B8A6)])), child: Text(completed ? 'وصلت إلى النجمة 🎉\nالخطوات: $moves' : 'أوصل البطل إلى النجمة\nالخطوات: $moves', style: const TextStyle(color: Colors.white, fontFamily: 'Changa', fontSize: 22, fontWeight: FontWeight.w900))),
       const SizedBox(height: 18),
       AspectRatio(aspectRatio: 1, child: GridView.builder(physics: const NeverScrollableScrollPhysics(), itemCount: size * size, gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: size, mainAxisSpacing: 6, crossAxisSpacing: 6), itemBuilder: (BuildContext context, int index) {
@@ -79,6 +80,6 @@ class _SmartMazePageState extends State<SmartMazePage> {
         ]),
         IconButton.filledTonal(onPressed: completed || busy ? null : () => _move(1, 0), icon: const Icon(Icons.keyboard_arrow_down_rounded)),
       ]),
-    ]));
+    ])));
   }
 }
